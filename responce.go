@@ -10,8 +10,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func UnmarshalFondyResponse(data []byte) (Response, error) {
@@ -135,13 +133,8 @@ func (d *CallBackOrderData) SignValid(merchantKey string) bool {
 	createdSignature := fmt.Sprintf("%x", h.Sum(nil))
 
 	if createdSignature != *d.Signature {
-
-		log.WithFields(log.Fields{
-			"calculated": createdSignature,
-			"given":      *d.Signature,
-		}).Error("error in request sign")
-
 		return false
 	}
+
 	return true
 }

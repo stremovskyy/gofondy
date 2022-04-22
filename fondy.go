@@ -23,8 +23,6 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type gateway struct {
@@ -50,14 +48,13 @@ func New(options *Options) FondyGateway {
 
 	g.client = &http.Client{Transport: tr}
 
-	log.Trace("Fondy gateway created")
-
 	return g
 }
 
 func (g *gateway) VerificationLink(invoiceId uuid.UUID, email *string, note string, code CurrencyCode) (*string, error) {
-	fondyVerificationAmount := g.options.VerificationAmount
+	fondyVerificationAmount := g.options.VerificationAmount * 100
 	lf := strconv.FormatFloat(g.options.VerificationLifeTime.Seconds(), 'f', 2, 64)
+	cbu := g.options.CallbackBaseURL + g.options.CallbackUrl
 
 	request := RequestObject{
 		MerchantData:      StringRef(note + "/card verification"),
@@ -70,7 +67,7 @@ func (g *gateway) VerificationLink(invoiceId uuid.UUID, email *string, note stri
 		MerchantID:        StringRef(g.options.MerchantId),
 		RequiredRectoken:  StringRef("Y"),
 		Currency:          StringRef(code.String()),
-		ServerCallbackURL: &g.options.CallbackUrl,
+		ServerCallbackURL: StringRef(cbu),
 		SenderEmail:       email,
 	}
 

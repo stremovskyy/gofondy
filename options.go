@@ -13,8 +13,9 @@ type Options struct {
 	VerificationDescription string
 	VerificationLifeTime    time.Duration
 
-	CallbackUrl string
-	DesignId    string
-	MerchantId  string
-	MerchantKey string
+	CallbackBaseURL string
+	CallbackUrl     string
+	DesignId        string
+	MerchantId      string
+	MerchantKey     string
 }
