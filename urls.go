@@ -22,33 +22,20 @@
  * SOFTWARE.
  */
 
-package main
+package gofondy
 
-import (
-	"fmt"
-	"log"
+type FondyURL string
 
-	"github.com/google/uuid"
-	"github.com/karmadon/gofondy"
-	"github.com/karmadon/gofondy/examples"
+const (
+	FondyURLGetVerification FondyURL = "https://api.fondy.eu/api/checkout/url/"
+	FondyURLStatus          FondyURL = "https://api.fondy.eu/api/status/order_id/"
+	FondyURLRecurring       FondyURL = "https://api.fondy.eu/api/recurring/"
+	FondyURLP2PCredit       FondyURL = "https://api.fondy.eu/api/p2pcredit/"
+	FondyURLRefund          FondyURL = "https://api.fondy.eu/api/reverse/order_id/"
+	FondyURLCapture         FondyURL = "https://api.fondy.eu/api/capture/order_id/"
+	Fondy3DSecureS1         FondyURL = "https://pay.fondy.eu/api/3dsecure_step1/"
 )
 
-func main() {
-	options := gofondy.DefaultOptions()
-
-	fondyGateway := gofondy.New(options)
-
-	merchAccount := &gofondy.MerchantAccount{
-		MerchantID:       examples.MerchantId,
-		MerchantKey:      examples.MerchantKey,
-		MerchantString:   "Test Merchant",
-		MerchantDesignID: examples.DesignId,
-	}
-
-	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", gofondy.CurrencyCodeUAH)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("\nVerification link: %s\n", *verificationLink)
+func (t FondyURL) String() string {
+	return string(t)
 }

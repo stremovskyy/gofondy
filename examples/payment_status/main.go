@@ -38,17 +38,21 @@ func main() {
 
 	fondyGateway := gofondy.New(options)
 
-	merchAccount := &gofondy.MerchantAccount{
-		MerchantID:       examples.MerchantId,
-		MerchantKey:      examples.MerchantKey,
-		MerchantString:   "Test Merchant",
-		MerchantDesignID: examples.DesignId,
-	}
-
-	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", gofondy.CurrencyCodeUAH)
+	parsedUUID, err := uuid.Parse(examples.GetStatusOrderUUID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nVerification link: %s\n", *verificationLink)
+	merchAccount := &gofondy.MerchantAccount{
+		MerchantID:     examples.MerchantId,
+		MerchantKey:    examples.MerchantKey,
+		MerchantString: "Test Merchant",
+	}
+
+	status, err := fondyGateway.Status(merchAccount, &parsedUUID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Status: %+v\n", status)
 }

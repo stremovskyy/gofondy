@@ -30,16 +30,6 @@ const (
 	FondyTimeFormat = "02.01.2006 15:04:05"
 )
 
-type FondyURL string
-
-const (
-	FondyURLGetVerification FondyURL = "https://api.fondy.eu/api/checkout/url/"
-)
-
-func (t FondyURL) String() string {
-	return string(t)
-}
-
 type FondyTransactionType string
 
 const (

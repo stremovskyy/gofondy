@@ -42,8 +42,18 @@ func UnmarshalFondyResponse(data []byte) (Response, error) {
 	return r, err
 }
 
+func UnmarshalStatusResponse(data []byte) (StatusResponse, error) {
+	var r StatusResponse
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
 type Response struct {
 	Response ResponseObject `json:"response"`
+}
+
+type StatusResponse struct {
+	Response OrderData `json:"response"`
 }
 
 type APIResponse struct {

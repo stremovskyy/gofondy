@@ -25,121 +25,102 @@
 package gofondy
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net"
-	"net/http"
 	"strconv"
 
 	"github.com/google/uuid"
 )
 
 type gateway struct {
-	client  *http.Client
+	manager fondyManager
 	options *Options
 }
 
 func New(options *Options) FondyGateway {
-	g := &gateway{options: options}
-
-	dialer := &net.Dialer{
-		Timeout:   options.Timeout,
-		KeepAlive: options.KeepAlive,
+	return &gateway{
+		manager: NewManager(options),
+		options: options,
 	}
-
-	tr := &http.Transport{
-		MaxIdleConns:       options.MaxIdleConns,
-		IdleConnTimeout:    options.IdleConnTimeout,
-		DisableCompression: true,
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return dialer.DialContext(ctx, network, addr)
-		}}
-
-	g.client = &http.Client{Transport: tr}
-
-	return g
 }
 
-func (g *gateway) VerificationLink(invoiceId uuid.UUID, email *string, note string, code CurrencyCode) (*string, error) {
+func (g *gateway) VerificationLink(account *MerchantAccount, invoiceId uuid.UUID, email *string, note string, code CurrencyCode) (*string, error) {
 	fondyVerificationAmount := g.options.VerificationAmount * 100
 	lf := strconv.FormatFloat(g.options.VerificationLifeTime.Seconds(), 'f', 2, 64)
 	cbu := g.options.CallbackBaseURL + g.options.CallbackUrl
 
-	request := RequestObject{
+	request := &RequestObject{
 		MerchantData:      StringRef(note + "/card verification"),
-		Amount:            StringRef(strconv.Itoa(fondyVerificationAmount)),
+		Amount:            StringRef(fmt.Sprintf("%d", fondyVerificationAmount)),
 		OrderID:           StringRef(invoiceId.String()),
 		OrderDesc:         StringRef(g.options.VerificationDescription),
 		Lifetime:          StringRef(lf),
-		Verification:      StringRef("Y"),
-		DesignID:          StringRef(g.options.DesignId),
-		MerchantID:        StringRef(g.options.MerchantId),
 		RequiredRectoken:  StringRef("Y"),
 		Currency:          StringRef(code.String()),
 		ServerCallbackURL: StringRef(cbu),
 		SenderEmail:       email,
 	}
 
-	raw, err := g.makeFondyRequest(request, FondyURLGetVerification, false)
+	raw, err := g.manager.Verify(request, account)
 	if err != nil {
-		return nil, NewAPIError(800, "Http request failed", err, &request, raw)
+		return nil, NewAPIError(800, "Http request failed", err, request, raw)
 	}
 
 	fondyResponse, err := UnmarshalFondyResponse(*raw)
 	if err != nil {
-		return nil, NewAPIError(801, "Unmarshal response fail", err, &request, raw)
+		return nil, NewAPIError(801, "Unmarshal response fail", err, request, raw)
 	}
 
 	if fondyResponse.Response.CheckoutURL == nil {
-		return nil, NewAPIError(802, "No Url In Response", err, &request, raw)
+		return nil, NewAPIError(802, "No Url In Response", err, request, raw)
 	}
 
 	return fondyResponse.Response.CheckoutURL, nil
 }
 
-func (g *gateway) makeFondyRequest(request RequestObject, url FondyURL, credit bool) (*[]byte, error) {
-	methodPost := "POST"
-	err := request.CreateSignature(g.options.MerchantKey)
+func (g *gateway) Status(account *MerchantAccount, invoiceId *uuid.UUID) (*OrderData, error) {
+	request := &RequestObject{
+		OrderID: StringRef(invoiceId.String()),
+	}
+
+	raw, err := g.manager.Status(request, account)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create signature: %w", err)
+		return nil, NewAPIError(800, "Http request failed", err, request, raw)
 	}
 
-	jsonValue, err := json.Marshal(NewFondyRequest(request))
+	fondyResponse, err := UnmarshalStatusResponse(*raw)
 	if err != nil {
-		return nil, fmt.Errorf("cannot marshal request: %w", err)
+		return nil, NewAPIError(801, "Unmarshal response fail", err, request, raw)
 	}
 
-	req, err := http.NewRequest(methodPost, url.String(), bytes.NewBuffer(jsonValue))
+	if fondyResponse.Response.ResponseStatus != nil && *fondyResponse.Response.ResponseStatus != "success" {
+		return nil, NewAPIError(802, *fondyResponse.Response.ErrorMessage, err, request, raw)
+	}
+
+	return &fondyResponse.Response, nil
+}
+
+func (g *gateway) Refund(account *MerchantAccount, invoiceId *uuid.UUID, amount *int) (*OrderData, error) {
+	refundAmount := *amount * 100
+
+	request := &RequestObject{
+		Amount:   StringRef(fmt.Sprintf("%.0f", refundAmount)),
+		OrderID:  StringRef(invoiceId.String()),
+		Currency: StringRef(string(CurrencyCodeUAH)),
+	}
+
+	raw, err := g.manager.RefundPayment(request, account)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create request: %w", err)
+		return nil, NewAPIError(800, "Http request failed", err, request, raw)
 	}
 
-	req.Header = http.Header{
-		"User-Agent":   {"Utax driveapp Service/" + Version},
-		"Accept":       {"application/json"},
-		"Content-Type": {"application/json"},
-		"X-Request-ID": {uuid.New().String()},
-	}
-
-	resp, err := g.client.Do(req)
+	fondyResponse, err := UnmarshalStatusResponse(*raw)
 	if err != nil {
-		return nil, fmt.Errorf("cannot send request: %w", err)
+		return nil, NewAPIError(801, "Unmarshal response fail", err, request, raw)
 	}
 
-	raw, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read response: %w", err)
+	if fondyResponse.Response.ResponseStatus != nil && *fondyResponse.Response.ResponseStatus != "success" {
+		return nil, NewAPIError(802, *fondyResponse.Response.ErrorMessage, err, request, raw)
 	}
 
-	_, err = io.Copy(ioutil.Discard, resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("cannot copy response buffer: %w", err)
-	}
-	defer resp.Body.Close()
-
-	return &raw, nil
+	return &fondyResponse.Response, nil
 }

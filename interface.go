@@ -29,5 +29,7 @@ import (
 )
 
 type FondyGateway interface {
-	VerificationLink(invoiceId uuid.UUID, email *string, note string, code CurrencyCode) (*string, error)
+	VerificationLink(account *MerchantAccount, invoiceId uuid.UUID, email *string, note string, code CurrencyCode) (*string, error)
+	Status(account *MerchantAccount, invoiceId *uuid.UUID) (*OrderData, error)
+	Refund(account *MerchantAccount, invoiceId *uuid.UUID, amount *int) (*OrderData, error)
 }

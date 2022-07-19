@@ -39,7 +39,19 @@ type Options struct {
 
 	CallbackBaseURL string
 	CallbackUrl     string
-	DesignId        string
-	MerchantId      string
-	MerchantKey     string
+}
+
+func DefaultOptions() *Options {
+	return &Options{
+		Timeout:                 time.Second * 10,
+		KeepAlive:               time.Second * 10,
+		MaxIdleConns:            10,
+		IdleConnTimeout:         time.Second * 10,
+		VerificationAmount:      1,
+		VerificationDescription: "Verification Test",
+		VerificationLifeTime:    600 * time.Second,
+
+		CallbackBaseURL: "http://localhost:8080",
+		CallbackUrl:     "/callback",
+	}
 }

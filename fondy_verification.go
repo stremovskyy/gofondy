@@ -24,7 +24,7 @@
 
 package gofondy
 
-type VerificationResponceResponse struct {
+type VerificationResponse struct {
 	ResponseStatus string `json:"response_status"`
 	ErrorMessage   string `json:"error_message"`
 	ErrorCode      int64  `json:"error_code"`
