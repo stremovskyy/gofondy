@@ -26,10 +26,12 @@ package gofondy
 
 import (
 	"github.com/google/uuid"
+	"github.com/karmadon/gofondy/consts"
+	"github.com/karmadon/gofondy/models"
 )
 
 type FondyGateway interface {
-	VerificationLink(account *MerchantAccount, invoiceId uuid.UUID, email *string, note string, code CurrencyCode) (*string, error)
-	Status(account *MerchantAccount, invoiceId *uuid.UUID) (*OrderData, error)
-	Refund(account *MerchantAccount, invoiceId *uuid.UUID, amount *int) (*OrderData, error)
+	VerificationLink(account *models.MerchantAccount, invoiceId uuid.UUID, email *string, note string, code consts.CurrencyCode) (*string, error)
+	Status(account *models.MerchantAccount, invoiceId *uuid.UUID) (*models.OrderData, error)
+	Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *int) (*models.OrderData, error)
 }

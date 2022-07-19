@@ -31,10 +31,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy"
 	"github.com/karmadon/gofondy/examples"
+	"github.com/karmadon/gofondy/models"
 )
 
 func main() {
-	options := gofondy.DefaultOptions()
+	options := models.DefaultOptions()
 
 	fondyGateway := gofondy.New(options)
 
@@ -43,7 +44,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	merchAccount := &gofondy.MerchantAccount{
+	merchAccount := &models.MerchantAccount{
 		MerchantID:     examples.MerchantId,
 		MerchantKey:    examples.MerchantKey,
 		MerchantString: "Test Merchant",

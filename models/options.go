@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package gofondy
+package models
 
 import (
 	"time"

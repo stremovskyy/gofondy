@@ -29,97 +29,101 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/karmadon/gofondy/consts"
+	"github.com/karmadon/gofondy/manager"
+	"github.com/karmadon/gofondy/models"
+	"github.com/karmadon/gofondy/utils"
 )
 
 type gateway struct {
-	manager fondyManager
-	options *Options
+	manager manager.FondyManager
+	options *models.Options
 }
 
-func New(options *Options) FondyGateway {
+func New(options *models.Options) FondyGateway {
 	return &gateway{
-		manager: NewManager(options),
+		manager: manager.NewManager(options),
 		options: options,
 	}
 }
 
-func (g *gateway) VerificationLink(account *MerchantAccount, invoiceId uuid.UUID, email *string, note string, code CurrencyCode) (*string, error) {
+func (g *gateway) VerificationLink(account *models.MerchantAccount, invoiceId uuid.UUID, email *string, note string, code consts.CurrencyCode) (*string, error) {
 	fondyVerificationAmount := g.options.VerificationAmount * 100
 	lf := strconv.FormatFloat(g.options.VerificationLifeTime.Seconds(), 'f', 2, 64)
 	cbu := g.options.CallbackBaseURL + g.options.CallbackUrl
 
-	request := &RequestObject{
-		MerchantData:      StringRef(note + "/card verification"),
-		Amount:            StringRef(fmt.Sprintf("%d", fondyVerificationAmount)),
-		OrderID:           StringRef(invoiceId.String()),
-		OrderDesc:         StringRef(g.options.VerificationDescription),
-		Lifetime:          StringRef(lf),
-		RequiredRectoken:  StringRef("Y"),
-		Currency:          StringRef(code.String()),
-		ServerCallbackURL: StringRef(cbu),
+	request := &models.RequestObject{
+		MerchantData:      utils.StringRef(note + "/card verification"),
+		Amount:            utils.StringRef(fmt.Sprintf("%d", fondyVerificationAmount)),
+		OrderID:           utils.StringRef(invoiceId.String()),
+		OrderDesc:         utils.StringRef(g.options.VerificationDescription),
+		Lifetime:          utils.StringRef(lf),
+		RequiredRectoken:  utils.StringRef("Y"),
+		Currency:          utils.StringRef(code.String()),
+		ServerCallbackURL: utils.StringRef(cbu),
 		SenderEmail:       email,
 	}
 
 	raw, err := g.manager.Verify(request, account)
 	if err != nil {
-		return nil, NewAPIError(800, "Http request failed", err, request, raw)
+		return nil, models.NewAPIError(800, "Http request failed", err, request, raw)
 	}
 
-	fondyResponse, err := UnmarshalFondyResponse(*raw)
+	fondyResponse, err := models.UnmarshalFondyResponse(*raw)
 	if err != nil {
-		return nil, NewAPIError(801, "Unmarshal response fail", err, request, raw)
+		return nil, models.NewAPIError(801, "Unmarshal response fail", err, request, raw)
 	}
 
 	if fondyResponse.Response.CheckoutURL == nil {
-		return nil, NewAPIError(802, "No Url In Response", err, request, raw)
+		return nil, models.NewAPIError(802, "No Url In Response", err, request, raw)
 	}
 
 	return fondyResponse.Response.CheckoutURL, nil
 }
 
-func (g *gateway) Status(account *MerchantAccount, invoiceId *uuid.UUID) (*OrderData, error) {
-	request := &RequestObject{
-		OrderID: StringRef(invoiceId.String()),
+func (g *gateway) Status(account *models.MerchantAccount, invoiceId *uuid.UUID) (*models.OrderData, error) {
+	request := &models.RequestObject{
+		OrderID: utils.StringRef(invoiceId.String()),
 	}
 
 	raw, err := g.manager.Status(request, account)
 	if err != nil {
-		return nil, NewAPIError(800, "Http request failed", err, request, raw)
+		return nil, models.NewAPIError(800, "Http request failed", err, request, raw)
 	}
 
-	fondyResponse, err := UnmarshalStatusResponse(*raw)
+	fondyResponse, err := models.UnmarshalStatusResponse(*raw)
 	if err != nil {
-		return nil, NewAPIError(801, "Unmarshal response fail", err, request, raw)
+		return nil, models.NewAPIError(801, "Unmarshal response fail", err, request, raw)
 	}
 
 	if fondyResponse.Response.ResponseStatus != nil && *fondyResponse.Response.ResponseStatus != "success" {
-		return nil, NewAPIError(802, *fondyResponse.Response.ErrorMessage, err, request, raw)
+		return nil, models.NewAPIError(802, *fondyResponse.Response.ErrorMessage, err, request, raw)
 	}
 
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) Refund(account *MerchantAccount, invoiceId *uuid.UUID, amount *int) (*OrderData, error) {
+func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *int) (*models.OrderData, error) {
 	refundAmount := *amount * 100
 
-	request := &RequestObject{
-		Amount:   StringRef(fmt.Sprintf("%.0f", refundAmount)),
-		OrderID:  StringRef(invoiceId.String()),
-		Currency: StringRef(string(CurrencyCodeUAH)),
+	request := &models.RequestObject{
+		Amount:   utils.StringRef(fmt.Sprintf("%.0f", refundAmount)),
+		OrderID:  utils.StringRef(invoiceId.String()),
+		Currency: utils.StringRef(string(consts.CurrencyCodeUAH)),
 	}
 
 	raw, err := g.manager.RefundPayment(request, account)
 	if err != nil {
-		return nil, NewAPIError(800, "Http request failed", err, request, raw)
+		return nil, models.NewAPIError(800, "Http request failed", err, request, raw)
 	}
 
-	fondyResponse, err := UnmarshalStatusResponse(*raw)
+	fondyResponse, err := models.UnmarshalStatusResponse(*raw)
 	if err != nil {
-		return nil, NewAPIError(801, "Unmarshal response fail", err, request, raw)
+		return nil, models.NewAPIError(801, "Unmarshal response fail", err, request, raw)
 	}
 
 	if fondyResponse.Response.ResponseStatus != nil && *fondyResponse.Response.ResponseStatus != "success" {
-		return nil, NewAPIError(802, *fondyResponse.Response.ErrorMessage, err, request, raw)
+		return nil, models.NewAPIError(802, *fondyResponse.Response.ErrorMessage, err, request, raw)
 	}
 
 	return &fondyResponse.Response, nil

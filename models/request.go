@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package gofondy
+package models
 
 import (
 	"crypto/sha1"
@@ -30,6 +30,8 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/karmadon/gofondy/utils"
 )
 
 type Request struct {
@@ -121,7 +123,7 @@ func (r *RequestObject) Sign(key string) error {
 
 	h := sha1.New()
 	h.Write([]byte(s))
-	r.Signature = StringRef(fmt.Sprintf("%x", h.Sum(nil)))
+	r.Signature = utils.StringRef(fmt.Sprintf("%x", h.Sum(nil)))
 
 	return nil
 }

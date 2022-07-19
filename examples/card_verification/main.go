@@ -30,22 +30,24 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy"
+	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/examples"
+	"github.com/karmadon/gofondy/models"
 )
 
 func main() {
-	options := gofondy.DefaultOptions()
+	options := models.DefaultOptions()
 
 	fondyGateway := gofondy.New(options)
 
-	merchAccount := &gofondy.MerchantAccount{
+	merchAccount := &models.MerchantAccount{
 		MerchantID:       examples.MerchantId,
 		MerchantKey:      examples.MerchantKey,
 		MerchantString:   "Test Merchant",
 		MerchantDesignID: examples.DesignId,
 	}
 
-	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", gofondy.CurrencyCodeUAH)
+	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", consts.CurrencyCodeUAH)
 	if err != nil {
 		log.Fatal(err)
 	}

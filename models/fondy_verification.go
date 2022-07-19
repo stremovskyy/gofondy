@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package gofondy
+package models
 
 type VerificationResponse struct {
 	ResponseStatus string `json:"response_status"`
