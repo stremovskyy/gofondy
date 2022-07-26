@@ -107,7 +107,7 @@ func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, 
 	refundAmount := *amount * 100
 
 	request := &models.RequestObject{
-		Amount:   utils.StringRef(fmt.Sprintf("%.0f", refundAmount)),
+		Amount:   utils.StringRef(fmt.Sprintf("%d", refundAmount)),
 		OrderID:  utils.StringRef(invoiceId.String()),
 		Currency: utils.StringRef(string(consts.CurrencyCodeUAH)),
 	}
