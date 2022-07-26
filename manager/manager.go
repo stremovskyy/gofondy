@@ -34,12 +34,10 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/models"
 	"github.com/karmadon/gofondy/utils"
-	"github.com/pkg/errors"
-
-	"github.com/google/uuid"
 )
 
 type FondyManager interface {
@@ -162,12 +160,12 @@ func (m *manager) do(url consts.FondyURL, request *models.RequestObject, credit 
 	if credit {
 		err := request.Sign(merchantAccount.MerchantCreditKey)
 		if err != nil {
-			return nil, errors.Errorf("cannot sign request with credit key: %v", err)
+			return nil, fmt.Errorf("cannot sign request with credit key: %v", err)
 		}
 	} else {
 		err := request.Sign(merchantAccount.MerchantKey)
 		if err != nil {
-			return nil, errors.Errorf("cannot sign request with merchant key: %v", err)
+			return nil, fmt.Errorf("cannot sign request with merchant key: %v", err)
 		}
 	}
 

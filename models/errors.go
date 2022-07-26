@@ -42,5 +42,9 @@ func NewAPIError(code int, message string, err error, requestObject *RequestObje
 }
 
 func (e APIError) Error() string {
-	return "HTTP error: " + e.Message + " (" + strconv.Itoa(e.Code) + ")" + " " + e.Err.Error()
+	if e.Err != nil {
+		return "HTTP error: " + e.Message + " (" + strconv.Itoa(e.Code) + ")" + " " + e.Err.Error()
+	}
+
+	return "HTTP error: " + e.Message + " (" + strconv.Itoa(e.Code) + ")"
 }
