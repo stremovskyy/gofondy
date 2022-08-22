@@ -35,9 +35,7 @@ import (
 )
 
 func main() {
-	options := models.DefaultOptions()
-
-	fondyGateway := gofondy.New(options)
+	fondyGateway := gofondy.New(models.DefaultOptions())
 
 	parsedUUID, err := uuid.Parse(examples.GetStatusOrderUUID)
 	if err != nil {
@@ -55,5 +53,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Status: %+v\n", status)
+	if *status.ResponseStatus == "success" {
+		fmt.Printf("Order status: %s\n", *status.OrderStatus)
+	} else {
+		fmt.Printf("Error: %s\n", status.ErrorMessage)
+	}
 }

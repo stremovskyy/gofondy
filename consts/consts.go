@@ -24,7 +24,7 @@
 
 package consts
 
-const Version = "0.0.1"
+const Version = "0.1.0"
 
 const (
 	FondyTimeFormat = "02.01.2006 15:04:05"
@@ -89,15 +89,15 @@ func (s *FondyCaptureStatus) String() string {
 	return ""
 }
 
-// Reversal processing status
+// FondyReverseStatus Reversal processing status
 type FondyReverseStatus string
 
 const (
-	// reversal has been created, but not processed yet
+	// FondyReverseStatusCreated reversal has been created, but not processed yet
 	FondyReverseStatusCreated FondyReverseStatus = "created"
-	// reversal is declined by FONDY payment gateway or by bank or by external payment system
+	// FondyReverseStatusDeclined reversal is declined by FONDY payment gateway or by bank or by external payment system
 	FondyReverseStatusDeclined FondyReverseStatus = "declined"
-	// reversal completed successfully
+	// FondyReverseStatusApproved reversal completed successfully
 	FondyReverseStatusApproved FondyReverseStatus = "approved"
 )
 

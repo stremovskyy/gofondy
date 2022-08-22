@@ -27,6 +27,7 @@ package models
 import (
 	"crypto/sha1"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -53,6 +54,50 @@ type Response struct {
 	Response ResponseObject `json:"response"`
 }
 
+func (r *Response) Error() error {
+	if r == nil {
+		return errors.New("response object is nil")
+	}
+
+	if r.Response.ResponseStatus != consts.FondyResponseStatusSuccess {
+		errString := "Fondy Response is not successful"
+
+		if r.Response.ErrorMessage != nil {
+			errString += " Message: " + *r.Response.ErrorMessage
+		}
+
+		if r.Response.ErrorCode != nil {
+			errString += " Code: " + strconv.Itoa(int(*r.Response.ErrorCode))
+		}
+
+		return errors.New(errString)
+	}
+
+	return nil
+}
+
+func (r *StatusResponse) Error() error {
+	if r == nil {
+		return errors.New("response object is nil")
+	}
+
+	if r.Response.ResponseStatus != nil && *r.Response.ResponseStatus != consts.FondyResponseStatusSuccess {
+		errString := "Fondy Response is not successful"
+
+		if r.Response.ErrorMessage != nil {
+			errString += " Message: " + *r.Response.ErrorMessage
+		}
+
+		if r.Response.ErrorCode != nil {
+			errString += " Code: " + strconv.Itoa(int(*r.Response.ErrorCode))
+		}
+
+		return errors.New(errString)
+	}
+
+	return nil
+}
+
 type StatusResponse struct {
 	Response OrderData `json:"response"`
 }
@@ -68,7 +113,7 @@ type ResponseObject struct {
 	Pending        bool                       `json:"pending"`
 	OrderData      OrderData                  `json:"order_data"`
 	APIVersion     string                     `json:"api_version"`
-	PaymentID      *interface{}               `json:"payment_id"`
+	PaymentID      *string                    `json:"payment_id"`
 	CheckoutURL    *string                    `json:"checkout_url"`
 	ErrorMessage   *string                    `json:"error_message"`
 	ErrorCode      *int64                     `json:"error_code"`
@@ -116,6 +161,7 @@ type OrderData struct {
 	Amount                  *string                      `json:"amount"`
 	SenderEmail             *string                      `json:"sender_email"`
 	Signature               *string                      `json:"signature"`
+	ErrorCode               *int64                       `json:"error_code"`
 }
 
 func (d *CallBackOrderData) SignValid(merchantKey string) bool {

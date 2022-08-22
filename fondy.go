@@ -74,6 +74,11 @@ func (g *gateway) VerificationLink(account *models.MerchantAccount, invoiceId uu
 		return nil, models.NewAPIError(801, "Unmarshal response fail", err, request, raw)
 	}
 
+	err = fondyResponse.Error()
+	if err != nil {
+		return nil, err
+	}
+
 	if fondyResponse.Response.CheckoutURL == nil {
 		return nil, models.NewAPIError(802, "No Url In Response", err, request, raw)
 	}
@@ -96,18 +101,19 @@ func (g *gateway) Status(account *models.MerchantAccount, invoiceId *uuid.UUID) 
 		return nil, models.NewAPIError(801, "Unmarshal response fail", err, request, raw)
 	}
 
-	if fondyResponse.Response.ResponseStatus != nil && *fondyResponse.Response.ResponseStatus != "success" {
-		return nil, models.NewAPIError(802, *fondyResponse.Response.ErrorMessage, err, request, raw)
+	err = fondyResponse.Error()
+	if err != nil {
+		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
 	}
 
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *int) (*models.OrderData, error) {
+func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error) {
 	refundAmount := *amount * 100
 
 	request := &models.RequestObject{
-		Amount:   utils.StringRef(fmt.Sprintf("%d", refundAmount)),
+		Amount:   utils.StringRef(fmt.Sprintf("%.f", refundAmount)),
 		OrderID:  utils.StringRef(invoiceId.String()),
 		Currency: utils.StringRef(string(consts.CurrencyCodeUAH)),
 	}
@@ -122,8 +128,92 @@ func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, 
 		return nil, models.NewAPIError(801, "Unmarshal response fail", err, request, raw)
 	}
 
-	if fondyResponse.Response.ResponseStatus != nil && *fondyResponse.Response.ResponseStatus != "success" {
-		return nil, models.NewAPIError(802, *fondyResponse.Response.ErrorMessage, err, request, raw)
+	err = fondyResponse.Error()
+	if err != nil {
+		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
+	}
+
+	return &fondyResponse.Response, nil
+}
+
+func (g *gateway) PaymentByToken(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error) {
+	paymentAmount := *amount * 100
+
+	request := &models.RequestObject{
+		Amount:   utils.StringRef(fmt.Sprintf("%.f", paymentAmount)),
+		OrderID:  utils.StringRef(invoiceId.String()),
+		Currency: utils.StringRef(string(consts.CurrencyCodeUAH)),
+		Rectoken: utils.StringRef(token),
+	}
+
+	raw, err := g.manager.StraightPayment(request, account)
+	if err != nil {
+		return nil, models.NewAPIError(800, "Http request failed while holding payment", err, request, raw)
+	}
+
+	fondyResponse, err := models.UnmarshalStatusResponse(*raw)
+	if err != nil {
+		return nil, models.NewAPIError(801, "Unmarshal hold payment response fail", err, request, raw)
+	}
+
+	err = fondyResponse.Error()
+	if err != nil {
+		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
+	}
+
+	return &fondyResponse.Response, nil
+}
+
+func (g *gateway) HoldPaymentByToken(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error) {
+	holdAmount := *amount * 100
+
+	request := &models.RequestObject{
+		Amount:   utils.StringRef(fmt.Sprintf("%.f", holdAmount)),
+		OrderID:  utils.StringRef(invoiceId.String()),
+		Currency: utils.StringRef(string(consts.CurrencyCodeUAH)),
+		Rectoken: utils.StringRef(token),
+	}
+
+	raw, err := g.manager.HoldPayment(request, account)
+	if err != nil {
+		return nil, models.NewAPIError(800, "Http request failed while holding payment", err, request, raw)
+	}
+
+	fondyResponse, err := models.UnmarshalStatusResponse(*raw)
+	if err != nil {
+		return nil, models.NewAPIError(801, "Unmarshal hold payment response fail", err, request, raw)
+	}
+
+	err = fondyResponse.Error()
+	if err != nil {
+		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
+	}
+
+	return &fondyResponse.Response, nil
+}
+
+func (g *gateway) CapturePayment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error) {
+	captureAmount := *amount * 100
+
+	request := &models.RequestObject{
+		Amount:   utils.StringRef(fmt.Sprintf("%.f", captureAmount)),
+		OrderID:  utils.StringRef(invoiceId.String()),
+		Currency: utils.StringRef(string(consts.CurrencyCodeUAH)),
+	}
+
+	raw, err := g.manager.CapturePayment(request, account)
+	if err != nil {
+		return nil, models.NewAPIError(800, "Http request failed while capturing payment", err, request, raw)
+	}
+
+	fondyResponse, err := models.UnmarshalStatusResponse(*raw)
+	if err != nil {
+		return nil, models.NewAPIError(801, "Unmarshal capture response fail", err, request, raw)
+	}
+
+	err = fondyResponse.Error()
+	if err != nil {
+		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
 	}
 
 	return &fondyResponse.Response, nil

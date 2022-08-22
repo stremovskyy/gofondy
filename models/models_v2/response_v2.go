@@ -22,33 +22,39 @@
  * SOFTWARE.
  */
 
-package main
+package models_v2
 
 import (
+	"crypto/sha1"
+	"encoding/json"
 	"fmt"
-	"log"
-
-	"github.com/google/uuid"
-	"github.com/karmadon/gofondy"
-	"github.com/karmadon/gofondy/consts"
-	"github.com/karmadon/gofondy/examples"
-	"github.com/karmadon/gofondy/models"
 )
 
-func main() {
-	fondyGateway := gofondy.New(models.DefaultOptions())
+func UnmarshalResponse(data []byte) (ResponseWrapper, error) {
+	var r ResponseWrapper
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
 
-	merchAccount := &models.MerchantAccount{
-		MerchantID:       examples.MerchantId,
-		MerchantKey:      examples.MerchantKey,
-		MerchantString:   "Test Merchant",
-		MerchantDesignID: examples.DesignId,
+type ResponseWrapper struct {
+	Response Response `json:"response"`
+}
+
+type Response struct {
+	Version   string `json:"version"`
+	Data      []byte `json:"data"`
+	Signature string `json:"signature"`
+}
+
+func (w *ResponseWrapper) SignIsValid(key string) bool {
+	if w == nil {
+		return false
 	}
 
-	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", consts.CurrencyCodeUAH)
-	if err != nil {
-		log.Fatal(err)
-	}
+	s := key + "|" + string(w.Response.Data)
+	h := sha1.New()
+	h.Write([]byte(s))
+	calculated := fmt.Sprintf("%x", h.Sum(nil))
 
-	fmt.Printf("\nVerification link: %s\n", *verificationLink)
+	return calculated == w.Response.Signature
 }

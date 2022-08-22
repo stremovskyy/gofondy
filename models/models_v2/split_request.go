@@ -22,33 +22,14 @@
  * SOFTWARE.
  */
 
-package main
+package models_v2
 
-import (
-	"fmt"
-	"log"
+import "encoding/json"
 
-	"github.com/google/uuid"
-	"github.com/karmadon/gofondy"
-	"github.com/karmadon/gofondy/consts"
-	"github.com/karmadon/gofondy/examples"
-	"github.com/karmadon/gofondy/models"
-)
+func (r *SplitRequest) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
 
-func main() {
-	fondyGateway := gofondy.New(models.DefaultOptions())
-
-	merchAccount := &models.MerchantAccount{
-		MerchantID:       examples.MerchantId,
-		MerchantKey:      examples.MerchantKey,
-		MerchantString:   "Test Merchant",
-		MerchantDesignID: examples.DesignId,
-	}
-
-	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", consts.CurrencyCodeUAH)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("\nVerification link: %s\n", *verificationLink)
+type SplitRequest struct {
+	Order Order `json:"order"`
 }

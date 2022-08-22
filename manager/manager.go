@@ -31,6 +31,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 
@@ -200,7 +201,12 @@ func (m *manager) do(url consts.FondyURL, request *models.RequestObject, credit 
 	if err != nil {
 		return nil, fmt.Errorf("cannot copy response buffer: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Printf("cannot close response body: %v", err)
+		}
+	}(resp.Body)
 
 	return &raw, nil
 }

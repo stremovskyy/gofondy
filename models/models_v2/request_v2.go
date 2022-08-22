@@ -22,33 +22,57 @@
  * SOFTWARE.
  */
 
-package main
+package models_v2
 
 import (
+	"bytes"
+	"crypto/sha1"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
-	"log"
-
-	"github.com/google/uuid"
-	"github.com/karmadon/gofondy"
-	"github.com/karmadon/gofondy/consts"
-	"github.com/karmadon/gofondy/examples"
-	"github.com/karmadon/gofondy/models"
 )
 
-func main() {
-	fondyGateway := gofondy.New(models.DefaultOptions())
+type Request struct {
+	Version   float64 `json:"version"` // TODO: Need to check if it's float64
+	Data      []byte  `json:"data"`
+	Signature string  `json:"signature"`
+}
 
-	merchAccount := &models.MerchantAccount{
-		MerchantID:       examples.MerchantId,
-		MerchantKey:      examples.MerchantKey,
-		MerchantString:   "Test Merchant",
-		MerchantDesignID: examples.DesignId,
+func NewRequest(data interface{}) *Request {
+	dataEncoded, _ := encodeToBase64(data)
+
+	return &Request{Version: 2.0, Data: []byte(dataEncoded)}
+}
+
+type RequestWrapper struct {
+	Request Request `json:"request"`
+}
+
+func (w *RequestWrapper) Sign(key string) *RequestWrapper {
+	if w == nil {
+		return nil
 	}
 
-	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", consts.CurrencyCodeUAH)
+	s := key + "|" + string(w.Request.Data)
+	h := sha1.New()
+	h.Write([]byte(s))
+	w.Request.Signature = fmt.Sprintf("%x", h.Sum(nil))
+
+	return w
+}
+
+func encodeToBase64(v interface{}) (string, error) {
+	var buf bytes.Buffer
+	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+	err := json.NewEncoder(encoder).Encode(v)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
-	fmt.Printf("\nVerification link: %s\n", *verificationLink)
+	err = encoder.Close()
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }

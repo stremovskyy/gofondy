@@ -22,33 +22,20 @@
  * SOFTWARE.
  */
 
-package main
+package models_v2
 
-import (
-	"fmt"
-	"log"
+type Receiver struct {
+	Requisites Requisites `json:"requisites"`
+	Type       string     `json:"type"`
+}
 
-	"github.com/google/uuid"
-	"github.com/karmadon/gofondy"
-	"github.com/karmadon/gofondy/consts"
-	"github.com/karmadon/gofondy/examples"
-	"github.com/karmadon/gofondy/models"
-)
-
-func main() {
-	fondyGateway := gofondy.New(models.DefaultOptions())
-
-	merchAccount := &models.MerchantAccount{
-		MerchantID:       examples.MerchantId,
-		MerchantKey:      examples.MerchantKey,
-		MerchantString:   "Test Merchant",
-		MerchantDesignID: examples.DesignId,
-	}
-
-	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", consts.CurrencyCodeUAH)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("\nVerification link: %s\n", *verificationLink)
+type Requisites struct {
+	Amount                int64   `json:"amount"`
+	SettlementDescription *string `json:"settlement_description,omitempty"`
+	MerchantID            *int64  `json:"merchant_id,omitempty"` // TODO: fondy couldn't decide string or int64
+	Account               *int64  `json:"account,omitempty"`
+	Okpo                  *int64  `json:"okpo,omitempty"`
+	JurName               *string `json:"jur_name,omitempty"`
+	Rectoken              *string `json:"rectoken,omitempty"`
+	CardNumber            *int64  `json:"card_number,omitempty"`
 }

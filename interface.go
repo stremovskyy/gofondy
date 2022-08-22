@@ -33,5 +33,8 @@ import (
 type FondyGateway interface {
 	VerificationLink(account *models.MerchantAccount, invoiceId uuid.UUID, email *string, note string, code consts.CurrencyCode) (*string, error)
 	Status(account *models.MerchantAccount, invoiceId *uuid.UUID) (*models.OrderData, error)
-	Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *int) (*models.OrderData, error)
+	PaymentByToken(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error)
+	HoldPaymentByToken(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error)
+	CapturePayment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error)
+	Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error)
 }

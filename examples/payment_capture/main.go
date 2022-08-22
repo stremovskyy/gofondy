@@ -30,7 +30,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy"
-	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/examples"
 	"github.com/karmadon/gofondy/models"
 )
@@ -39,16 +38,23 @@ func main() {
 	fondyGateway := gofondy.New(models.DefaultOptions())
 
 	merchAccount := &models.MerchantAccount{
-		MerchantID:       examples.MerchantId,
-		MerchantKey:      examples.MerchantKey,
-		MerchantString:   "Test Merchant",
-		MerchantDesignID: examples.DesignId,
+		MerchantID:     examples.MerchantId,
+		MerchantKey:    examples.MerchantKey,
+		MerchantString: "Test Merchant",
 	}
 
-	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", consts.CurrencyCodeUAH)
+	invoiceId := uuid.MustParse("4eeefd24-d9d0-48a2-9f21-31138c0f6447")
+
+	captureAmount := float64(1)
+
+	capturePayment, err := fondyGateway.CapturePayment(merchAccount, &invoiceId, &captureAmount)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nVerification link: %s\n", *verificationLink)
+	if *capturePayment.ResponseStatus == "success" {
+		fmt.Printf("Order (%s) Capture Status: %s\n", capturePayment.OrderID.String(), *capturePayment.CaptureStatus)
+	} else {
+		fmt.Printf("Error: %s\n", capturePayment.ErrorMessage)
+	}
 }

@@ -27,10 +27,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy"
-	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/examples"
 	"github.com/karmadon/gofondy/models"
 )
@@ -39,16 +39,35 @@ func main() {
 	fondyGateway := gofondy.New(models.DefaultOptions())
 
 	merchAccount := &models.MerchantAccount{
-		MerchantID:       examples.MerchantId,
-		MerchantKey:      examples.MerchantKey,
-		MerchantString:   "Test Merchant",
-		MerchantDesignID: examples.DesignId,
+		MerchantID:     examples.MerchantId,
+		MerchantKey:    examples.MerchantKey,
+		MerchantString: "Test Merchant",
 	}
 
-	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", consts.CurrencyCodeUAH)
+	invoiceId := uuid.MustParse("4eeefd24-d9d0-48a2-9f21-31138c0f6447")
+
+	status, err := fondyGateway.Status(merchAccount, &invoiceId)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nVerification link: %s\n", *verificationLink)
+	if *status.ResponseStatus == "success" {
+		fmt.Printf("Order status: %s\n", *status.OrderStatus)
+	} else {
+		fmt.Printf("Error: %s\n", status.ErrorMessage)
+	}
+
+	captureAmount, err := strconv.ParseFloat(*status.Amount, 64)
+	captureAmount /= 100
+
+	refundPayment, err := fondyGateway.Refund(merchAccount, &invoiceId, &captureAmount)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if *refundPayment.ResponseStatus == "success" {
+		fmt.Printf("Order (%s) Reversed: %s\n", refundPayment.OrderID.String(), *refundPayment.ReversalAmount)
+	} else {
+		fmt.Printf("Error: %s\n", refundPayment.ErrorMessage)
+	}
 }

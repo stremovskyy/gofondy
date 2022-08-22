@@ -60,6 +60,7 @@ type MerchantAccount struct {
 	MerchantKey              string              `json:"merchant_key"`
 	MerchantCreditKey        string              `json:"merchant_credit_key"`
 	MerchantDesignID         string              `json:"merchant_design_id"`
+	IsTechnical              bool                `json:"is_technical"`
 }
 
 func NewMerchantAccount(merchantID string, merchantKey string, merchantCreditKey string) *MerchantAccount {
