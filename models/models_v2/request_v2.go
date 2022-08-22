@@ -38,10 +38,12 @@ type Request struct {
 	Signature string  `json:"signature"`
 }
 
-func NewRequest(data interface{}) *Request {
+func NewRequest(data interface{}) *RequestWrapper {
 	dataEncoded, _ := encodeToBase64(data)
 
-	return &Request{Version: 2.0, Data: []byte(dataEncoded)}
+	return &RequestWrapper{
+		Request{Version: 2.0, Data: []byte(dataEncoded)},
+	}
 }
 
 type RequestWrapper struct {

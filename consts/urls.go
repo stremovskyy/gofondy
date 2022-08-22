@@ -34,6 +34,7 @@ const (
 	FondyURLRefund          FondyURL = "https://api.fondy.eu/api/reverse/order_id/"
 	FondyURLCapture         FondyURL = "https://api.fondy.eu/api/capture/order_id/"
 	Fondy3DSecureS1         FondyURL = "https://pay.fondy.eu/api/3dsecure_step1/"
+	FondySettlement         FondyURL = " https://pay.fondy.eu/api/settlement"
 )
 
 func (t FondyURL) String() string {

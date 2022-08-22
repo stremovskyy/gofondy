@@ -25,19 +25,13 @@
 package manager
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 
-	"github.com/google/uuid"
 	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/models"
+	"github.com/karmadon/gofondy/models/models_v2"
 	"github.com/karmadon/gofondy/utils"
 )
 
@@ -51,6 +45,7 @@ type FondyManager interface {
 	HoldPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
 	Withdraw(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
 	RefundPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
+	SplitPayment(request *models_v2.SplitRequest, merchantAccount *models.MerchantAccount) (*[]byte, error)
 }
 
 type manager struct {
@@ -108,11 +103,15 @@ func (m *manager) MobileStraightPayment(request *models.RequestObject, merchantA
 }
 
 func (m *manager) CapturePayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.final(consts.FondyURLCapture, request, merchantAccount)
+	return m.final(consts.FondyURLCapture, request, merchantAccount, merchantAccount.IsTechnical)
 }
 
 func (m *manager) RefundPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.final(consts.FondyURLRefund, request, merchantAccount)
+	return m.final(consts.FondyURLRefund, request, merchantAccount, merchantAccount.IsTechnical)
+}
+
+func (m *manager) SplitPayment(request *models_v2.SplitRequest, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.splitPayment(consts.FondySettlement, request, merchantAccount)
 }
 
 func (m *manager) Withdraw(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
@@ -125,88 +124,9 @@ func (m *manager) Verify(request *models.RequestObject, merchantAccount *models.
 	request.DesignID = &merchantAccount.MerchantDesignID
 	request.Verification = utils.StringRef("Y")
 
-	return m.payment(consts.FondyURLGetVerification, request, merchantAccount)
+	return m.verify(consts.FondyURLGetVerification, request, merchantAccount)
 }
 
 func (m *manager) Status(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.final(consts.FondyURLStatus, request, merchantAccount)
-}
-
-func (m *manager) payment(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.do(url, request, false, merchantAccount, true)
-}
-
-func (m *manager) info(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.do(url, request, false, merchantAccount, false)
-}
-
-func (m *manager) withdraw(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.do(url, request, true, merchantAccount, true)
-}
-
-func (m *manager) final(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.do(url, request, false, merchantAccount, false)
-}
-
-func (m *manager) do(url consts.FondyURL, request *models.RequestObject, credit bool, merchantAccount *models.MerchantAccount, addOrderDescription bool) (*[]byte, error) {
-	requestID := uuid.New().String()
-	methodPost := "POST"
-
-	request.MerchantID = &merchantAccount.MerchantID
-
-	if addOrderDescription {
-		request.OrderDesc = utils.StringRef(merchantAccount.MerchantString)
-	}
-
-	if credit {
-		err := request.Sign(merchantAccount.MerchantCreditKey)
-		if err != nil {
-			return nil, fmt.Errorf("cannot sign request with credit key: %v", err)
-		}
-	} else {
-		err := request.Sign(merchantAccount.MerchantKey)
-		if err != nil {
-			return nil, fmt.Errorf("cannot sign request with merchant key: %v", err)
-		}
-	}
-
-	jsonValue, err := json.Marshal(models.NewFondyRequest(request))
-	if err != nil {
-		return nil, fmt.Errorf("cannot marshal request: %w", err)
-	}
-
-	req, err := http.NewRequest(methodPost, url.String(), bytes.NewBuffer(jsonValue))
-	if err != nil {
-		return nil, fmt.Errorf("cannot create request: %w", err)
-	}
-
-	req.Header = http.Header{
-		"User-Agent":   {"GOFONDY/" + consts.Version},
-		"Accept":       {"application/json"},
-		"Content-Type": {"application/json"},
-		"X-Request-ID": {requestID},
-	}
-
-	resp, err := m.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("cannot send request: %w", err)
-	}
-
-	raw, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read response: %w", err)
-	}
-
-	_, err = io.Copy(ioutil.Discard, resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("cannot copy response buffer: %w", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Printf("cannot close response body: %v", err)
-		}
-	}(resp.Body)
-
-	return &raw, nil
+	return m.final(consts.FondyURLStatus, request, merchantAccount, false)
 }

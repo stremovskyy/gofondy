@@ -29,13 +29,21 @@ type Receiver struct {
 	Type       string     `json:"type"`
 }
 
+func NewMerchantReceiver(requisites *Requisites) *Receiver {
+	return &Receiver{Requisites: *requisites, Type: "merchant"}
+}
+
 type Requisites struct {
 	Amount                int64   `json:"amount"`
 	SettlementDescription *string `json:"settlement_description,omitempty"`
-	MerchantID            *int64  `json:"merchant_id,omitempty"` // TODO: fondy couldn't decide string or int64
+	MerchantID            *string `json:"merchant_id,omitempty"` // TODO: fondy couldn't decide string or int64
 	Account               *int64  `json:"account,omitempty"`
 	Okpo                  *int64  `json:"okpo,omitempty"`
 	JurName               *string `json:"jur_name,omitempty"`
 	Rectoken              *string `json:"rectoken,omitempty"`
 	CardNumber            *int64  `json:"card_number,omitempty"`
+}
+
+func NewMerchantRequisites(amount int64, merchantID *string, settlementDescription *string) *Requisites {
+	return &Requisites{Amount: amount, SettlementDescription: settlementDescription, MerchantID: merchantID}
 }

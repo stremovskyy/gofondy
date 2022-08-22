@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/models"
+	"github.com/karmadon/gofondy/models/models_v2"
 )
 
 type FondyGateway interface {
@@ -37,4 +38,5 @@ type FondyGateway interface {
 	HoldPaymentByToken(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error)
 	CapturePayment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error)
 	Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error)
+	Split(account *models.MerchantAccount, invoiceId *uuid.UUID, token string) (*models_v2.Response, error)
 }

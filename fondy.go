@@ -25,6 +25,7 @@
 package gofondy
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -32,6 +33,7 @@ import (
 	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/manager"
 	"github.com/karmadon/gofondy/models"
+	"github.com/karmadon/gofondy/models/models_v2"
 	"github.com/karmadon/gofondy/utils"
 )
 
@@ -131,6 +133,68 @@ func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, 
 	err = fondyResponse.Error()
 	if err != nil {
 		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
+	}
+
+	return &fondyResponse.Response, nil
+}
+
+func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, cardToken string) (*models_v2.Response, error) {
+	err := account.SplitAccounts.Error()
+	if err != nil {
+		return nil, errors.New("split accounts problem " + err.Error())
+	}
+
+	if !account.IsTechnical {
+		return nil, errors.New("split accounts problem: only technical accounts can split")
+	}
+
+	if len(account.SplitAccounts) == 0 {
+		return nil, errors.New("split accounts problem: no split accounts")
+	}
+
+	orderData, err := g.Status(account, invoiceId)
+	if err != nil {
+		return nil, err
+	}
+
+	order := models_v2.Order{
+		Amount:      orderData.Amount,
+		OrderID:     utils.StringRef(invoiceId.String()),
+		Currency:    utils.StringRef(string(consts.CurrencyCodeUAH)),
+		OrderType:   utils.StringRef("settlement"),
+		Rectoken:    utils.StringRef(cardToken),
+		OperationID: utils.StringRef(invoiceId.String()),
+		Receiver:    []models_v2.Receiver{},
+	}
+
+	wholeAmount, err := strconv.ParseFloat(*orderData.Amount, 64)
+	if err != nil {
+		return nil, errors.New("split accounts problem: amount parse error")
+	}
+
+	splitAmountSum := 0.0
+
+	for _, merchantAccount := range account.SplitAccounts {
+		splitAmount := wholeAmount * merchantAccount.SplitPercentage / 100
+		merchantReceiver := models_v2.NewMerchantReceiver(models_v2.NewMerchantRequisites(int64(splitAmount), &merchantAccount.MerchantID, &merchantAccount.MerchantAddedDescription))
+		order.Receiver = append(order.Receiver, *merchantReceiver)
+		splitAmountSum += splitAmount
+	}
+
+	if splitAmountSum != wholeAmount {
+		return nil, fmt.Errorf("order %s split accounts problem: split amount sum %f != whole amount %f", orderData.OrderID.String(), splitAmountSum, wholeAmount)
+	}
+
+	splitRequest := &models_v2.SplitRequest{Order: order}
+
+	raw, err := g.manager.SplitPayment(splitRequest, account)
+	if err != nil {
+		return nil, models.NewAPIError(800, "Http splitRequest failed", err, nil, raw)
+	}
+
+	fondyResponse, err := models_v2.UnmarshalResponse(*raw)
+	if err != nil {
+		return nil, models.NewAPIError(801, "Unmarshal response fail", err, nil, raw)
 	}
 
 	return &fondyResponse.Response, nil

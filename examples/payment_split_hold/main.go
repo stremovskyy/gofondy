@@ -30,7 +30,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy"
-	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/examples"
 	"github.com/karmadon/gofondy/models"
 )
@@ -38,18 +37,51 @@ import (
 func main() {
 	fondyGateway := gofondy.New(models.DefaultOptions())
 
-	merchAccount := &models.MerchantAccount{
-		MerchantID:       examples.MerchantId,
-		MerchantKey:      examples.MerchantKey,
-		MerchantString:   "Test Merchant",
-		MerchantDesignID: examples.DesignId,
-		IsTechnical:      true,
+	splitA := &models.MerchantAccount{
+		MerchantID:      examples.SplitAMerchantId,
+		MerchantKey:     examples.SplitAMerchantKey,
+		MerchantString:  "Split A Merchant",
+		SplitPercentage: 30.0,
 	}
 
-	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", consts.CurrencyCodeUAH)
+	splitB := &models.MerchantAccount{
+		MerchantID:      examples.SplitBMerchantId,
+		MerchantKey:     examples.SplitBMerchantKey,
+		MerchantString:  "Split B Merchant",
+		SplitPercentage: 70.0,
+	}
+
+	accounts := models.MerchantAccounts{}
+	accounts.Add(splitA)
+	accounts.Add(splitB)
+	err := accounts.Error()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nVerification link: %s\n", *verificationLink)
+	techAccount := &models.MerchantAccount{
+		MerchantID:     examples.TechMerchantId,
+		MerchantKey:    examples.TechMerchantKey,
+		MerchantString: "Tech Merchant",
+		SplitAccounts:  accounts,
+		IsTechnical:    true,
+	}
+
+	invoiceId := uuid.New()
+
+	holdAmount := float64(1)
+
+	paymentByToken, err := fondyGateway.HoldPaymentByToken(techAccount, &invoiceId, &holdAmount, examples.CardToken)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Payment by token: %+v\n", paymentByToken)
+
+	intermediateResponse, err := fondyGateway.Split(techAccount, &invoiceId, examples.CardToken)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	print(intermediateResponse)
 }

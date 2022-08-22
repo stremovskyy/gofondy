@@ -25,6 +25,8 @@
 package models
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
 )
 
@@ -61,8 +63,34 @@ type MerchantAccount struct {
 	MerchantCreditKey        string              `json:"merchant_credit_key"`
 	MerchantDesignID         string              `json:"merchant_design_id"`
 	IsTechnical              bool                `json:"is_technical"`
+	SplitAccounts            MerchantAccounts    `json:"split_accounts"`
+	SplitPercentage          float64             `json:"split_percentage"`
 }
 
 func NewMerchantAccount(merchantID string, merchantKey string, merchantCreditKey string) *MerchantAccount {
 	return &MerchantAccount{MerchantID: merchantID, MerchantKey: merchantKey, MerchantCreditKey: merchantCreditKey}
+}
+
+type MerchantAccounts []MerchantAccount
+
+func (a *MerchantAccounts) Error() error {
+	if a == nil {
+		return errors.New("empty merchant accounts")
+	}
+
+	splitPercent := 0.0
+
+	for _, account := range *a {
+		splitPercent += account.SplitPercentage
+	}
+
+	if splitPercent != 100.0 {
+		return errors.New("split percent sum not equal 100")
+	}
+
+	return nil
+}
+
+func (a *MerchantAccounts) Add(account *MerchantAccount) {
+	*a = append(*a, *account)
 }

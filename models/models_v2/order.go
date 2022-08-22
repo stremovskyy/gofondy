@@ -25,27 +25,31 @@
 package models_v2
 
 type Order struct {
-	PaymentID           int64         `json:"payment_id"`
-	Fee                 string        `json:"fee"`
-	OrderType           string        `json:"order_type"`
-	ReversalAmount      string        `json:"reversal_amount"`
-	OrderID             string        `json:"order_id"`
-	SettlementAmount    string        `json:"settlement_amount"`
-	MerchantData        string        `json:"merchant_data"`
-	SettlementDate      string        `json:"settlement_date"`
+	PaymentID           *int64        `json:"payment_id"`
+	Fee                 *string       `json:"fee"`
+	OrderType           *string       `json:"order_type"`
+	ReversalAmount      *string       `json:"reversal_amount"`
+	OrderID             *string       `json:"order_id"`
+	SettlementAmount    *string       `json:"settlement_amount"`
+	MerchantData        *string       `json:"merchant_data"`
+	SettlementDate      *string       `json:"settlement_date"`
 	Transaction         []Transaction `json:"transaction"`
-	OperationID         string        `json:"operation_id"`
-	OrderStatus         string        `json:"order_status"`
-	ResponseDescription string        `json:"response_description"`
-	MerchantID          int64         `json:"merchant_id"`
-	OrderTime           string        `json:"order_time"`
-	ResponseCode        string        `json:"response_code"`
-	SettlementCurrency  string        `json:"settlement_currency"`
-	ServerCallbackURL   string        `json:"server_callback_url"`
-	Rectoken            string        `json:"rectoken"`
-	Currency            string        `json:"currency"`
-	Amount              string        `json:"amount"`
-	ResponseURL         string        `json:"response_url"`
-	OrderDesc           string        `json:"order_desc"`
+	OperationID         *string       `json:"operation_id"`
+	OrderStatus         *string       `json:"order_status"`
+	ResponseDescription *string       `json:"response_description"`
+	MerchantID          *int64        `json:"merchant_id"`
+	OrderTime           *string       `json:"order_time"`
+	ResponseCode        *string       `json:"response_code"`
+	SettlementCurrency  *string       `json:"settlement_currency"`
+	ServerCallbackURL   *string       `json:"server_callback_url"`
+	Rectoken            *string       `json:"rectoken"`
+	Currency            *string       `json:"currency"`
+	Amount              *string       `json:"amount"`
+	ResponseURL         *string       `json:"response_url"`
+	OrderDesc           *string       `json:"order_desc"`
 	Receiver            []Receiver    `json:"receiver"`
+}
+
+func (o *Order) AddReceiver(receiver *Receiver) {
+	o.Receiver = append(o.Receiver, *receiver)
 }
