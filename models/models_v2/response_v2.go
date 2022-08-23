@@ -58,3 +58,7 @@ func (w *ResponseWrapper) SignIsValid(key string) bool {
 
 	return calculated == w.Response.Signature
 }
+
+func (w *ResponseWrapper) Error() error {
+	return nil // TODO: implement
+}

@@ -45,7 +45,7 @@ type FondyManager interface {
 	HoldPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
 	Withdraw(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
 	RefundPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
-	SplitPayment(request *models_v2.SplitRequest, merchantAccount *models.MerchantAccount) (*[]byte, error)
+	SplitPayment(request models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error)
 }
 
 type manager struct {
@@ -110,8 +110,8 @@ func (m *manager) RefundPayment(request *models.RequestObject, merchantAccount *
 	return m.final(consts.FondyURLRefund, request, merchantAccount, merchantAccount.IsTechnical)
 }
 
-func (m *manager) SplitPayment(request *models_v2.SplitRequest, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.splitPayment(consts.FondySettlement, request, merchantAccount)
+func (m *manager) SplitPayment(order models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.splitPayment(consts.FondySettlement, order, merchantAccount)
 }
 
 func (m *manager) Withdraw(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {

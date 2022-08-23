@@ -164,30 +164,9 @@ func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, c
 		OrderType:   utils.StringRef("settlement"),
 		Rectoken:    utils.StringRef(cardToken),
 		OperationID: utils.StringRef(invoiceId.String()),
-		Receiver:    []models_v2.Receiver{},
 	}
 
-	wholeAmount, err := strconv.ParseFloat(*orderData.Amount, 64)
-	if err != nil {
-		return nil, errors.New("split accounts problem: amount parse error")
-	}
-
-	splitAmountSum := 0.0
-
-	for _, merchantAccount := range account.SplitAccounts {
-		splitAmount := wholeAmount * merchantAccount.SplitPercentage / 100
-		merchantReceiver := models_v2.NewMerchantReceiver(models_v2.NewMerchantRequisites(int64(splitAmount), &merchantAccount.MerchantID, &merchantAccount.MerchantAddedDescription))
-		order.Receiver = append(order.Receiver, *merchantReceiver)
-		splitAmountSum += splitAmount
-	}
-
-	if splitAmountSum != wholeAmount {
-		return nil, fmt.Errorf("order %s split accounts problem: split amount sum %f != whole amount %f", orderData.OrderID.String(), splitAmountSum, wholeAmount)
-	}
-
-	splitRequest := &models_v2.SplitRequest{Order: order}
-
-	raw, err := g.manager.SplitPayment(splitRequest, account)
+	raw, err := g.manager.SplitPayment(order, account)
 	if err != nil {
 		return nil, models.NewAPIError(800, "Http splitRequest failed", err, nil, raw)
 	}
@@ -195,6 +174,11 @@ func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, c
 	fondyResponse, err := models_v2.UnmarshalResponse(*raw)
 	if err != nil {
 		return nil, models.NewAPIError(801, "Unmarshal response fail", err, nil, raw)
+	}
+
+	err = fondyResponse.Error()
+	if err != nil {
+		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, nil, raw)
 	}
 
 	return &fondyResponse.Response, nil

@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -33,8 +34,8 @@ func (m *manager) payment(url consts.FondyURL, request *models.RequestObject, me
 	return m.do(url, request, false, merchantAccount, true)
 }
 
-func (m *manager) splitPayment(url consts.FondyURL, request *models_v2.SplitRequest, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.doWithSplit(url, request, false, merchantAccount, true)
+func (m *manager) splitPayment(url consts.FondyURL, order models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.doWithSplit(url, order, false, merchantAccount, true)
 }
 
 func (m *manager) verify(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
@@ -112,7 +113,7 @@ func (m *manager) do(url consts.FondyURL, request *models.RequestObject, credit 
 	return &raw, nil
 }
 
-func (m *manager) doWithSplit(url consts.FondyURL, request *models_v2.SplitRequest, credit bool, merchantAccount *models.MerchantAccount, addOrderDescription bool) (*[]byte, error) {
+func (m *manager) doWithSplit(url consts.FondyURL, order models_v2.Order, credit bool, merchantAccount *models.MerchantAccount, addOrderDescription bool) (*[]byte, error) {
 	requestID := uuid.New().String()
 	methodPost := "POST"
 
@@ -121,13 +122,31 @@ func (m *manager) doWithSplit(url consts.FondyURL, request *models_v2.SplitReque
 		return nil, fmt.Errorf("cannot parse merchant id: %w", err)
 	}
 
-	request.Order.MerchantID = &merchantId
+	order.MerchantID = &merchantId
 
 	if addOrderDescription {
-		request.Order.OrderDesc = utils.StringRef(merchantAccount.MerchantString)
+		order.OrderDesc = utils.StringRef(merchantAccount.MerchantString)
 	}
 
-	fondyRequest := models_v2.NewRequest(request)
+	wholeAmount, err := strconv.ParseFloat(*order.Amount, 64)
+	if err != nil {
+		return nil, errors.New("split accounts problem: amount parse error")
+	}
+
+	splitAmountSum := 0.0
+
+	for _, splitAccount := range merchantAccount.SplitAccounts {
+		splitAmount := wholeAmount * splitAccount.SplitPercentage / 100
+		merchantReceiver := models_v2.NewMerchantReceiver(models_v2.NewMerchantRequisites(int64(splitAmount), &splitAccount.MerchantID, &splitAccount.MerchantAddedDescription))
+		order.Receiver = append(order.Receiver, *merchantReceiver)
+		splitAmountSum += splitAmount
+	}
+
+	if splitAmountSum != wholeAmount {
+		return nil, fmt.Errorf("order %s split accounts problem: split amount sum %f != whole amount %f", *order.OrderID, splitAmountSum, wholeAmount)
+	}
+
+	fondyRequest := models_v2.NewRequest(&models_v2.SplitRequest{Order: order})
 
 	if credit {
 		fondyRequest.Sign(merchantAccount.MerchantCreditKey)
