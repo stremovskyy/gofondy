@@ -80,6 +80,7 @@ type FondyCaptureStatus string
 const (
 	FondyCaptureStatusHold     FondyCaptureStatus = "hold"
 	FondyCaptureStatusCaptured FondyCaptureStatus = "captured"
+	FondyCaptureStatusReversed FondyCaptureStatus = "reversed"
 )
 
 func (s *FondyCaptureStatus) String() string {

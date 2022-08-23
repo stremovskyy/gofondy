@@ -32,22 +32,22 @@ import (
 	"github.com/karmadon/gofondy/consts"
 )
 
-func UnmarshalFondyResponse(data []byte) (Response, error) {
-	var r Response
+func UnmarshalStatusResponse(data []byte) (StatusResponse, error) {
+	var r StatusResponse
 	err := json.Unmarshal(data, &r)
 	return r, err
 }
 
-type Response struct {
-	Response ResponseObject `json:"response"`
+type StatusResponse struct {
+	Response OrderData `json:"response"`
 }
 
-func (r *Response) Error() error {
+func (r *StatusResponse) Error() error {
 	if r == nil {
 		return errors.New("response object is nil")
 	}
 
-	if r.Response.ResponseStatus != consts.FondyResponseStatusSuccess {
+	if r.Response.ResponseStatus != nil && *r.Response.ResponseStatus != consts.FondyResponseStatusSuccess {
 		errString := "Fondy Response is not successful"
 
 		if r.Response.ErrorMessage != nil {
@@ -62,18 +62,4 @@ func (r *Response) Error() error {
 	}
 
 	return nil
-}
-
-type ResponseObject struct {
-	Target         string                     `json:"target"`
-	ResponseURL    *string                    `json:"response_url"`
-	ResponseStatus consts.FondyResponseStatus `json:"response_status"`
-	Pending        bool                       `json:"pending"`
-	OrderData      OrderData                  `json:"order_data"`
-	APIVersion     string                     `json:"api_version"`
-	PaymentID      *string                    `json:"payment_id"`
-	CheckoutURL    *string                    `json:"checkout_url"`
-	ErrorMessage   *string                    `json:"error_message"`
-	ErrorCode      *int64                     `json:"error_code"`
-	RequestID      *string                    `json:"request_id"`
 }
