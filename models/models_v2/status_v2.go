@@ -33,27 +33,27 @@ func UnmarshalStatus(data []byte) (Status, error) {
 }
 
 type Status struct {
-	Order Order `json:"order"`
+	Order Order `json:"order,omitempty"`
 }
 
 type Transaction struct {
-	Status                        string      `json:"status"`
-	OdbRef                        interface{} `json:"odb_ref"`
-	DocNo                         interface{} `json:"doc_no"`
-	Currency                      string      `json:"currency"`
-	SettlementResponseCode        string      `json:"settlement_response_code"`
-	MerchantID                    int64       `json:"merchant_id"`
-	ID                            int64       `json:"id"`
-	SettlementCurrency            string      `json:"settlement_currency"`
-	SettlementFee                 float64     `json:"settlement_fee"`
-	Fee                           int64       `json:"fee"`
-	ReversalAmount                int64       `json:"reversal_amount"`
-	SettlementAmount              float64     `json:"settlement_amount"`
-	SettlementStatus              string      `json:"settlement_status"`
-	Amount                        int64       `json:"amount"`
-	SettlementResponseDescription string      `json:"settlement_response_description"`
-	ParentTranID                  interface{} `json:"parent_tran_id"`
-	Receiver                      Receiver    `json:"receiver"`
-	Payouttime                    string      `json:"payouttime"`
-	Type                          string      `json:"type"`
+	Status                        string      `json:"status,omitempty"`
+	OdbRef                        interface{} `json:"odb_ref,omitempty"`
+	DocNo                         interface{} `json:"doc_no,omitempty"`
+	Currency                      string      `json:"currency,omitempty"`
+	SettlementResponseCode        string      `json:"settlement_response_code,omitempty"`
+	MerchantID                    int64       `json:"merchant_id,omitempty"`
+	ID                            int64       `json:"id,omitempty"`
+	SettlementCurrency            string      `json:"settlement_currency,omitempty"`
+	SettlementFee                 float64     `json:"settlement_fee,omitempty"`
+	Fee                           int64       `json:"fee,omitempty"`
+	ReversalAmount                int64       `json:"reversal_amount,omitempty"`
+	SettlementAmount              float64     `json:"settlement_amount,omitempty"`
+	SettlementStatus              string      `json:"settlement_status,omitempty"`
+	Amount                        int64       `json:"amount,omitempty"`
+	SettlementResponseDescription string      `json:"settlement_response_description,omitempty"`
+	ParentTranID                  interface{} `json:"parent_tran_id,omitempty"`
+	Receiver                      Receiver    `json:"receiver,omitempty"`
+	Payouttime                    string      `json:"payouttime,omitempty"`
+	Type                          string      `json:"type,omitempty"`
 }

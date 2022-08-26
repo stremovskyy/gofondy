@@ -27,6 +27,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy"
@@ -37,24 +38,56 @@ import (
 func main() {
 	fondyGateway := gofondy.New(models.DefaultOptions())
 
-	merchAccount := &models.MerchantAccount{
-		MerchantID:     examples.MerchantId,
-		MerchantKey:    examples.MerchantKey,
-		MerchantString: "Test Merchant",
+	splitA := &models.MerchantAccount{
+		MerchantID:      examples.SplitAMerchantId,
+		MerchantKey:     examples.SplitAMerchantKey,
+		MerchantString:  "Split A Merchant",
+		SplitPercentage: 30.0,
 	}
 
-	invoiceId := uuid.New()
+	splitB := &models.MerchantAccount{
+		MerchantID:      examples.SplitBMerchantId,
+		MerchantKey:     examples.SplitBMerchantKey,
+		MerchantString:  "Split B Merchant",
+		SplitPercentage: 70.0,
+	}
 
-	holdAmount := float64(3)
-
-	paymentByToken, err := fondyGateway.Hold(merchAccount, &invoiceId, &holdAmount, examples.CardToken)
+	accounts := models.MerchantAccounts{}
+	accounts.Add(splitA)
+	accounts.Add(splitB)
+	err := accounts.Error()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if *paymentByToken.ResponseStatus == "success" {
-		fmt.Printf("Order (%s) status: %s\n", paymentByToken.OrderID, *paymentByToken.OrderStatus)
-	} else {
-		fmt.Printf("Error: %s\n", paymentByToken.ErrorMessage)
+	techAccount := &models.MerchantAccount{
+		MerchantID:     examples.TechMerchantId,
+		MerchantKey:    examples.TechMerchantKey,
+		MerchantString: "Tech Merchant",
+		SplitAccounts:  accounts,
+		IsTechnical:    true,
 	}
+
+	invoiceId := uuid.MustParse("45057a5b-b6e2-4953-ae2d-86d66621b637")
+
+	status, err := fondyGateway.Status(techAccount, &invoiceId)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if *status.ResponseStatus == "success" {
+		fmt.Printf("Order status: %s\n", *status.OrderStatus)
+	} else {
+		fmt.Printf("Error: %s\n", status.ErrorMessage)
+	}
+
+	captureAmount, err := strconv.ParseFloat(*status.Amount, 64)
+	captureAmount /= 100
+
+	refundPayment, err := fondyGateway.SplitRefund(techAccount, &invoiceId, &captureAmount)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Order (%s) status: %s\n", refundPayment.OrderID, *refundPayment.OrderStatus)
 }

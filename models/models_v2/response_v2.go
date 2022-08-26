@@ -62,3 +62,14 @@ func (w *ResponseWrapper) SignIsValid(key string) bool {
 func (w *ResponseWrapper) Error() error {
 	return nil // TODO: implement
 }
+
+func (w *ResponseWrapper) Order() (*Order, error) {
+	var order Order
+
+	err := json.Unmarshal(w.Response.Data, &order)
+	if err != nil {
+		return nil, err
+	}
+
+	return &order, nil
+}

@@ -77,6 +77,23 @@ type OrderData struct {
 	Signature               *string                      `json:"signature"`
 	ErrorCode               *int64                       `json:"error_code"`
 	FeeOplata               *string                      `json:"fee_oplata"`
+	AdditionalInfo          *string                      `json:"additional_info"`
+
+	additional *AdditionalInfo
+}
+
+// Additional returns additional info from order
+func (o *OrderData) Additional() *AdditionalInfo {
+	if o.AdditionalInfo == nil {
+		return nil
+	}
+
+	if o.additional == nil {
+		additional, _ := UnmarshalAdditionalInfo([]byte(*o.AdditionalInfo))
+		o.additional = &additional
+	}
+
+	return o.additional
 }
 
 func (o *OrderData) SignValid(merchantKey string) bool {
@@ -180,7 +197,7 @@ func (o *OrderData) UncompletedHold() bool {
 		return false
 	}
 
-	if *o.OrderStatus == consts.StatusApproved && (o.ReversalAmount == nil || *o.ReversalAmount == "") {
+	if *o.OrderStatus == consts.StatusApproved && (o.ReversalAmount == nil || *o.ReversalAmount == "" || *o.ReversalAmount == "0") {
 		return o.FeeOplata == nil || *o.FeeOplata == "0"
 	}
 

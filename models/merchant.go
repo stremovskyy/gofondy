@@ -26,6 +26,7 @@ package models
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/google/uuid"
 )
@@ -69,6 +70,15 @@ type MerchantAccount struct {
 
 func NewMerchantAccount(merchantID string, merchantKey string, merchantCreditKey string) *MerchantAccount {
 	return &MerchantAccount{MerchantID: merchantID, MerchantKey: merchantKey, MerchantCreditKey: merchantCreditKey}
+}
+
+func (a *MerchantAccount) MerchantIDInt() int64 {
+	parseInt, err := strconv.ParseInt(a.MerchantID, 10, 64)
+	if err != nil {
+		return 0
+	}
+
+	return parseInt
 }
 
 type MerchantAccounts []MerchantAccount

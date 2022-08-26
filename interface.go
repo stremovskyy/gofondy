@@ -34,9 +34,10 @@ import (
 type FondyGateway interface {
 	VerificationLink(account *models.MerchantAccount, invoiceId uuid.UUID, email *string, note string, code consts.CurrencyCode) (*string, error)
 	Status(account *models.MerchantAccount, invoiceId *uuid.UUID) (*models.OrderData, error)
-	PaymentByToken(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error)
-	HoldPaymentByToken(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error)
-	CapturePayment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error)
+	Payment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error)
+	Hold(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error)
+	Capture(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error)
 	Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error)
-	Split(account *models.MerchantAccount, invoiceId *uuid.UUID, token string) (*models_v2.Response, error)
+	Split(account *models.MerchantAccount, invoiceId *uuid.UUID, token string) (*models_v2.Order, error)
+	SplitRefund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models_v2.Order, error)
 }

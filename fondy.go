@@ -55,6 +55,9 @@ func (g *gateway) VerificationLink(account *models.MerchantAccount, invoiceId uu
 	cbu := g.options.CallbackBaseURL + g.options.CallbackUrl
 
 	request := &models.RequestObject{
+		MerchantID:        utils.StringRef(account.MerchantID),
+		DesignID:          &account.MerchantDesignID,
+		Verification:      utils.StringRef("Y"),
 		MerchantData:      utils.StringRef(note + "/card verification"),
 		Amount:            utils.StringRef(fmt.Sprintf("%d", fondyVerificationAmount)),
 		OrderID:           utils.StringRef(invoiceId.String()),
@@ -90,7 +93,8 @@ func (g *gateway) VerificationLink(account *models.MerchantAccount, invoiceId uu
 
 func (g *gateway) Status(account *models.MerchantAccount, invoiceId *uuid.UUID) (*models.OrderData, error) {
 	request := &models.RequestObject{
-		OrderID: utils.StringRef(invoiceId.String()),
+		MerchantID: &account.MerchantID,
+		OrderID:    utils.StringRef(invoiceId.String()),
 	}
 
 	raw, err := g.manager.Status(request, account)
@@ -115,9 +119,10 @@ func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, 
 	refundAmount := *amount * 100
 
 	request := &models.RequestObject{
-		Amount:   utils.StringRef(fmt.Sprintf("%.f", refundAmount)),
-		OrderID:  utils.StringRef(invoiceId.String()),
-		Currency: utils.StringRef(string(consts.CurrencyCodeUAH)),
+		MerchantID: &account.MerchantID,
+		Amount:     utils.StringRef(fmt.Sprintf("%.f", refundAmount)),
+		OrderID:    utils.StringRef(invoiceId.String()),
+		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
 	}
 
 	raw, err := g.manager.RefundPayment(request, account)
@@ -138,7 +143,35 @@ func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, 
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, cardToken string) (*models_v2.Response, error) {
+func (g *gateway) SplitRefund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models_v2.Order, error) {
+	refundAmount := *amount * 100
+
+	request := &models_v2.Order{
+		MerchantID: account.MerchantIDInt(),
+		Amount:     utils.StringRef(fmt.Sprintf("%.f", refundAmount)),
+		OrderID:    utils.StringRef(invoiceId.String()),
+		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
+	}
+
+	raw, err := g.manager.SplitRefund(request, account)
+	if err != nil {
+		return nil, models.NewAPIError(800, "Http request failed", err, request, raw)
+	}
+
+	fondyResponse, err := models_v2.UnmarshalResponse(*raw)
+	if err != nil {
+		return nil, models.NewAPIError(801, "Unmarshal response fail", err, request, raw)
+	}
+
+	err = fondyResponse.Error()
+	if err != nil {
+		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
+	}
+
+	return fondyResponse.Order()
+}
+
+func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, token string) (*models_v2.Order, error) {
 	err := account.SplitAccounts.Error()
 	if err != nil {
 		return nil, errors.New("split accounts problem " + err.Error())
@@ -157,13 +190,19 @@ func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, c
 		return nil, err
 	}
 
-	order := models_v2.Order{
+	if !orderData.Captured() {
+		return nil, errors.New("split accounts problem: order is not captured")
+	}
+
+	order := &models_v2.Order{
+		MerchantID:  account.MerchantIDInt(),
 		Amount:      orderData.Amount,
-		OrderID:     utils.StringRef(invoiceId.String()),
+		OrderID:     utils.StringRef(uuid.NewString()),
 		Currency:    utils.StringRef(string(consts.CurrencyCodeUAH)),
 		OrderType:   utils.StringRef("settlement"),
-		Rectoken:    utils.StringRef(cardToken),
+		Rectoken:    utils.StringRef(token),
 		OperationID: utils.StringRef(invoiceId.String()),
+		OrderDesc:   utils.StringRef(account.MerchantString),
 	}
 
 	raw, err := g.manager.SplitPayment(order, account)
@@ -181,17 +220,20 @@ func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, c
 		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, nil, raw)
 	}
 
-	return &fondyResponse.Response, nil
+	return fondyResponse.Order()
 }
 
-func (g *gateway) PaymentByToken(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error) {
+func (g *gateway) Payment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error) {
 	paymentAmount := *amount * 100
 
 	request := &models.RequestObject{
-		Amount:   utils.StringRef(fmt.Sprintf("%.f", paymentAmount)),
-		OrderID:  utils.StringRef(invoiceId.String()),
-		Currency: utils.StringRef(string(consts.CurrencyCodeUAH)),
-		Rectoken: utils.StringRef(token),
+		MerchantID: &account.MerchantID,
+		OrderDesc:  utils.StringRef(account.MerchantString),
+		Amount:     utils.StringRef(fmt.Sprintf("%.f", paymentAmount)),
+		OrderID:    utils.StringRef(invoiceId.String()),
+		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
+		Rectoken:   utils.StringRef(token),
+		Preauth:    utils.StringRef("N"),
 	}
 
 	raw, err := g.manager.StraightPayment(request, account)
@@ -212,14 +254,17 @@ func (g *gateway) PaymentByToken(account *models.MerchantAccount, invoiceId *uui
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) HoldPaymentByToken(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error) {
+func (g *gateway) Hold(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error) {
 	holdAmount := *amount * 100
 
 	request := &models.RequestObject{
-		Amount:   utils.StringRef(fmt.Sprintf("%.f", holdAmount)),
-		OrderID:  utils.StringRef(invoiceId.String()),
-		Currency: utils.StringRef(string(consts.CurrencyCodeUAH)),
-		Rectoken: utils.StringRef(token),
+		MerchantID: &account.MerchantID,
+		Amount:     utils.StringRef(fmt.Sprintf("%.f", holdAmount)),
+		OrderID:    utils.StringRef(invoiceId.String()),
+		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
+		Rectoken:   utils.StringRef(token),
+		Preauth:    utils.StringRef("Y"),
+		OrderDesc:  utils.StringRef(account.MerchantString),
 	}
 
 	raw, err := g.manager.HoldPayment(request, account)
@@ -240,13 +285,14 @@ func (g *gateway) HoldPaymentByToken(account *models.MerchantAccount, invoiceId 
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) CapturePayment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error) {
+func (g *gateway) Capture(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error) {
 	captureAmount := *amount * 100
 
 	request := &models.RequestObject{
-		Amount:   utils.StringRef(fmt.Sprintf("%.f", captureAmount)),
-		OrderID:  utils.StringRef(invoiceId.String()),
-		Currency: utils.StringRef(string(consts.CurrencyCodeUAH)),
+		MerchantID: &account.MerchantID,
+		Amount:     utils.StringRef(fmt.Sprintf("%.f", captureAmount)),
+		OrderID:    utils.StringRef(invoiceId.String()),
+		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
 	}
 
 	raw, err := g.manager.CapturePayment(request, account)

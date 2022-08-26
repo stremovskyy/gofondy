@@ -44,7 +44,7 @@ func main() {
 		MerchantString: "Test Merchant",
 	}
 
-	invoiceId := uuid.MustParse("4eeefd24-d9d0-48a2-9f21-31138c0f6447")
+	invoiceId := uuid.MustParse("fc0efcea-203b-40a9-86f1-e640c837c34d")
 
 	status, err := fondyGateway.Status(merchAccount, &invoiceId)
 	if err != nil {

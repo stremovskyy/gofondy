@@ -37,10 +37,7 @@ import (
 func main() {
 	fondyGateway := gofondy.New(models.DefaultOptions())
 
-	parsedUUID, err := uuid.Parse(examples.GetStatusOrderUUID)
-	if err != nil {
-		log.Fatal(err)
-	}
+	invoiceId := uuid.MustParse("e427696f-4c0e-4a47-8195-a3152dcf68f7")
 
 	merchAccount := &models.MerchantAccount{
 		MerchantID:     examples.MerchantId,
@@ -48,7 +45,7 @@ func main() {
 		MerchantString: "Test Merchant",
 	}
 
-	status, err := fondyGateway.Status(merchAccount, &parsedUUID)
+	status, err := fondyGateway.Status(merchAccount, &invoiceId)
 	if err != nil {
 		log.Fatal(err)
 	}

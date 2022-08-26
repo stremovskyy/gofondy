@@ -67,21 +67,12 @@ func main() {
 		IsTechnical:    true,
 	}
 
-	invoiceId := uuid.New()
-
-	holdAmount := float64(1)
-
-	paymentByToken, err := fondyGateway.HoldPaymentByToken(techAccount, &invoiceId, &holdAmount, examples.CardToken)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("Payment by token: %+v\n", paymentByToken)
+	invoiceId := uuid.MustParse("a8813a48-edbd-4182-8dbb-ba06a8b7ef4e")
 
 	intermediateResponse, err := fondyGateway.Split(techAccount, &invoiceId, examples.CardToken)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	print(intermediateResponse)
+	fmt.Printf("intermediateResponse: %+v\n", intermediateResponse)
 }

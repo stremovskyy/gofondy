@@ -12,202 +12,68 @@
 package manager
 
 import (
-	"bytes"
-	"compress/gzip"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"log"
+	"context"
+	"net"
 	"net/http"
-	"strconv"
+	"time"
 
-	"github.com/google/uuid"
 	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/models"
 	"github.com/karmadon/gofondy/models/models_v2"
-	"github.com/karmadon/gofondy/utils"
 )
 
-func (m *manager) payment(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.do(url, request, false, merchantAccount, true)
+type Client interface {
+	payment(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
+	split(url consts.FondyURL, order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error)
+	withdraw(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
 }
 
-func (m *manager) splitPayment(url consts.FondyURL, order models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.doWithSplit(url, order, false, merchantAccount, true)
+type client struct {
+	v1 *v1Client
+	v2 *v2Client
 }
 
-func (m *manager) verify(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.do(url, request, false, merchantAccount, true)
+type ClientOptions struct {
+	Timeout         time.Duration
+	KeepAlive       time.Duration
+	MaxIdleConns    int
+	IdleConnTimeout time.Duration
 }
 
-func (m *manager) withdraw(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.do(url, request, true, merchantAccount, true)
+func NewClient(options *ClientOptions) Client {
+	dialer := &net.Dialer{
+		Timeout:   options.Timeout,
+		KeepAlive: options.KeepAlive,
+	}
+
+	tr := &http.Transport{
+		MaxIdleConns:       options.MaxIdleConns,
+		IdleConnTimeout:    options.IdleConnTimeout,
+		DisableCompression: true,
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.DialContext(ctx, network, addr)
+		}}
+
+	cl := &http.Client{Transport: tr}
+
+	return &client{
+		v1: &v1Client{
+			client: cl,
+		},
+		v2: &v2Client{
+			client: cl,
+		},
+	}
 }
 
-func (m *manager) final(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount, technical bool) (*[]byte, error) {
-	return m.do(url, request, false, merchantAccount, false)
+func (m *client) payment(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.v1.do(url, request, false, merchantAccount)
 }
 
-func (m *manager) do(url consts.FondyURL, request *models.RequestObject, credit bool, merchantAccount *models.MerchantAccount, addOrderDescription bool) (*[]byte, error) {
-	requestID := uuid.New().String()
-	methodPost := "POST"
-
-	request.MerchantID = &merchantAccount.MerchantID
-
-	if addOrderDescription {
-		request.OrderDesc = utils.StringRef(merchantAccount.MerchantString)
-	}
-
-	if credit {
-		err := request.Sign(merchantAccount.MerchantCreditKey)
-		if err != nil {
-			return nil, fmt.Errorf("cannot sign request with credit key: %v", err)
-		}
-	} else {
-		err := request.Sign(merchantAccount.MerchantKey)
-		if err != nil {
-			return nil, fmt.Errorf("cannot sign request with merchant key: %v", err)
-		}
-	}
-
-	jsonValue, err := json.Marshal(models.NewFondyRequest(request))
-	if err != nil {
-		return nil, fmt.Errorf("cannot marshal request: %w", err)
-	}
-
-	req, err := http.NewRequest(methodPost, url.String(), bytes.NewBuffer(jsonValue))
-	if err != nil {
-		return nil, fmt.Errorf("cannot create request: %w", err)
-	}
-
-	req.Header = http.Header{
-		"User-Agent":   {"GOFONDY/" + consts.Version},
-		"Accept":       {"application/json"},
-		"Content-Type": {"application/json"},
-		"X-Request-ID": {requestID},
-	}
-
-	resp, err := m.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("cannot send request: %w", err)
-	}
-
-	raw, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read response: %w", err)
-	}
-
-	_, err = io.Copy(ioutil.Discard, resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("cannot copy response buffer: %w", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Printf("cannot close response body: %v", err)
-		}
-	}(resp.Body)
-
-	return &raw, nil
+func (m *client) withdraw(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.v1.do(url, request, true, merchantAccount)
 }
 
-func (m *manager) doWithSplit(url consts.FondyURL, order models_v2.Order, credit bool, merchantAccount *models.MerchantAccount, addOrderDescription bool) (*[]byte, error) {
-	requestID := uuid.New().String()
-	methodPost := "POST"
-
-	merchantId, err := strconv.ParseInt(merchantAccount.MerchantID, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("cannot parse merchant id: %w", err)
-	}
-
-	order.MerchantID = &merchantId
-
-	if addOrderDescription {
-		order.OrderDesc = utils.StringRef(merchantAccount.MerchantString)
-	}
-
-	wholeAmount, err := strconv.ParseFloat(*order.Amount, 64)
-	if err != nil {
-		return nil, errors.New("split accounts problem: amount parse error")
-	}
-
-	splitAmountSum := 0.0
-
-	for _, splitAccount := range merchantAccount.SplitAccounts {
-		splitAmount := wholeAmount * splitAccount.SplitPercentage / 100
-		merchantReceiver := models_v2.NewMerchantReceiver(models_v2.NewMerchantRequisites(int64(splitAmount), &splitAccount.MerchantID, &splitAccount.MerchantAddedDescription))
-		order.Receiver = append(order.Receiver, *merchantReceiver)
-		splitAmountSum += splitAmount
-	}
-
-	if splitAmountSum != wholeAmount {
-		return nil, fmt.Errorf("order %s split accounts problem: split amount sum %f != whole amount %f", *order.OrderID, splitAmountSum, wholeAmount)
-	}
-
-	fondyRequest := models_v2.NewRequest(&models_v2.SplitRequest{Order: order})
-
-	if credit {
-		fondyRequest.Sign(merchantAccount.MerchantCreditKey)
-	} else {
-		fondyRequest.Sign(merchantAccount.MerchantKey)
-	}
-
-	jsonValue, err := json.Marshal(fondyRequest)
-	if err != nil {
-		return nil, fmt.Errorf("cannot marshal request: %w", err)
-	}
-
-	req, err := http.NewRequest(methodPost, url.String(), bytes.NewBuffer(jsonValue))
-	if err != nil {
-		return nil, fmt.Errorf("cannot create request: %w", err)
-	}
-
-	req.Header = http.Header{
-		"User-Agent":      {"GOFONDY/" + consts.Version},
-		"Accept":          {"application/json"},
-		"Content-Type":    {"application/json"},
-		"Accept-Encoding": {"gzip"},
-		"X-Request-ID":    {requestID},
-		"X-API-Version":   {"2.0"},
-	}
-
-	resp, err := m.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("cannot send request: %w", err)
-	}
-
-	var reader io.ReadCloser
-
-	switch resp.Header.Get("Content-Encoding") {
-	case "gzip":
-		reader, err = gzip.NewReader(resp.Body)
-		defer func(reader io.ReadCloser) {
-			err := reader.Close()
-			if err != nil {
-				log.Printf("cannot close gzip reader: %v", err)
-			}
-		}(reader)
-	default:
-		reader = resp.Body
-	}
-
-	raw, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read response: %w", err)
-	}
-
-	_, err = io.Copy(ioutil.Discard, reader)
-	if err != nil {
-		return nil, fmt.Errorf("cannot copy response buffer: %w", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Printf("cannot close response body: %v", err)
-		}
-	}(resp.Body)
-
-	return &raw, nil
+func (m *client) split(url consts.FondyURL, order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.v2.do(url, order, false, merchantAccount, true)
 }

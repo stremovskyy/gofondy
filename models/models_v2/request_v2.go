@@ -32,17 +32,28 @@ import (
 	"fmt"
 )
 
-type Request struct {
-	Version   float64 `json:"version"` // TODO: Need to check if it's float64
-	Data      []byte  `json:"data"`
-	Signature string  `json:"signature"`
+type KeepingZeroFloat float64
+
+func (f KeepingZeroFloat) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%.1f", float64(f))), nil
 }
 
-func NewRequest(data interface{}) *RequestWrapper {
-	dataEncoded, _ := encodeToBase64(data)
+type Request struct {
+	Version   KeepingZeroFloat `json:"version"` // Idiotic version parsing in Fondy API
+	Data      string           `json:"data"`
+	Signature string           `json:"signature"`
+}
+
+func NewRequest(order *Order) *RequestWrapper {
+
+	envelope := struct {
+		Order *Order `json:"order"`
+	}{Order: order}
+
+	dataEncoded, _ := encodeToBase64(envelope)
 
 	return &RequestWrapper{
-		Request{Version: 2.0, Data: []byte(dataEncoded)},
+		Request{Version: 2.0, Data: dataEncoded},
 	}
 }
 

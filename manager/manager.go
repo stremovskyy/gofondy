@@ -25,10 +25,6 @@
 package manager
 
 import (
-	"context"
-	"net"
-	"net/http"
-
 	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/models"
 	"github.com/karmadon/gofondy/models/models_v2"
@@ -45,88 +41,92 @@ type FondyManager interface {
 	HoldPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
 	Withdraw(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
 	RefundPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
-	SplitPayment(request models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error)
+	SplitRefund(order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error)
+	SplitPayment(order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error)
 }
 
 type manager struct {
-	client  *http.Client
+	client  Client
 	options *models.Options
 }
 
 func NewManager(options *models.Options) *manager {
-	m := &manager{options: options}
-
-	dialer := &net.Dialer{
-		Timeout:   options.Timeout,
-		KeepAlive: options.KeepAlive,
+	return &manager{
+		options: options,
+		client: NewClient(&ClientOptions{
+			Timeout:         options.Timeout,
+			KeepAlive:       options.KeepAlive,
+			MaxIdleConns:    options.MaxIdleConns,
+			IdleConnTimeout: options.IdleConnTimeout,
+		}),
 	}
+}
 
-	tr := &http.Transport{
-		MaxIdleConns:       options.MaxIdleConns,
-		IdleConnTimeout:    options.IdleConnTimeout,
-		DisableCompression: true,
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return dialer.DialContext(ctx, network, addr)
-		}}
-
-	m.client = &http.Client{Transport: tr}
-
-	return m
+func NewManagerWithClient(options *models.Options, client Client) *manager {
+	return &manager{
+		options: options,
+		client:  client,
+	}
 }
 
 func (m *manager) HoldPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	request.Preauth = utils.StringRef("Y")
 	request.MerchantData = utils.StringRef("hold/" + merchantAccount.MerchantAddedDescription + request.AdditionalDataString())
 
-	return m.payment(consts.FondyURLRecurring, request, merchantAccount)
+	return m.client.payment(consts.FondyURLRecurring, request, merchantAccount)
 }
 
 func (m *manager) StraightPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	request.Preauth = utils.StringRef("N")
 	request.MerchantData = utils.StringRef("straight/" + merchantAccount.MerchantAddedDescription + request.AdditionalDataString())
 
-	return m.payment(consts.FondyURLRecurring, request, merchantAccount)
+	return m.client.payment(consts.FondyURLRecurring, request, merchantAccount)
 }
 
 func (m *manager) MobileHoldPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
 	request.Preauth = utils.StringRef("Y")
 	request.MerchantData = utils.StringRef("mobile/hold/" + merchantAccount.MerchantAddedDescription + request.AdditionalDataString())
+	request.OrderDesc = utils.StringRef(merchantAccount.MerchantString)
+	request.MerchantID = &merchantAccount.MerchantID
 
-	return m.payment(consts.Fondy3DSecureS1, request, merchantAccount)
+	return m.client.payment(consts.Fondy3DSecureS1, request, merchantAccount)
 }
 
 func (m *manager) MobileStraightPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
 	request.Preauth = utils.StringRef("N")
 	request.MerchantData = utils.StringRef("mobile/straight/" + merchantAccount.MerchantAddedDescription + request.AdditionalDataString())
+	request.OrderDesc = utils.StringRef(merchantAccount.MerchantString)
+	request.MerchantID = &merchantAccount.MerchantID
 
-	return m.payment(consts.Fondy3DSecureS1, request, merchantAccount)
-}
-
-func (m *manager) CapturePayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.final(consts.FondyURLCapture, request, merchantAccount, merchantAccount.IsTechnical)
-}
-
-func (m *manager) RefundPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.final(consts.FondyURLRefund, request, merchantAccount, merchantAccount.IsTechnical)
-}
-
-func (m *manager) SplitPayment(order models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.splitPayment(consts.FondySettlement, order, merchantAccount)
+	return m.client.payment(consts.Fondy3DSecureS1, request, merchantAccount)
 }
 
 func (m *manager) Withdraw(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
 	request.MerchantData = utils.StringRef("withdraw/" + merchantAccount.MerchantAddedDescription + request.AdditionalDataString())
+	request.OrderDesc = utils.StringRef(merchantAccount.MerchantString)
+	request.MerchantID = &merchantAccount.MerchantID
 
-	return m.withdraw(consts.FondyURLP2PCredit, request, merchantAccount)
+	return m.client.withdraw(consts.FondyURLP2PCredit, request, merchantAccount)
 }
 
-func (m *manager) Verify(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	request.DesignID = &merchantAccount.MerchantDesignID
-	request.Verification = utils.StringRef("Y")
+func (m *manager) CapturePayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.client.payment(consts.FondyURLCapture, request, merchantAccount)
+}
 
-	return m.verify(consts.FondyURLGetVerification, request, merchantAccount)
+func (m *manager) RefundPayment(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.client.payment(consts.FondyURLRefund, request, merchantAccount)
 }
 
 func (m *manager) Status(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.final(consts.FondyURLStatus, request, merchantAccount, false)
+	return m.client.payment(consts.FondyURLStatus, request, merchantAccount)
+}
+
+func (m *manager) Verify(request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.client.payment(consts.FondyURLGetVerification, request, merchantAccount)
+}
+
+func (m *manager) SplitRefund(order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.client.split(consts.FondyURLRefund, order, merchantAccount)
+}
+
+func (m *manager) SplitPayment(order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.client.split(consts.FondySettlement, order, merchantAccount)
 }

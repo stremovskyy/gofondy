@@ -22,29 +22,22 @@
  * SOFTWARE.
  */
 
-package models
+package models_v2
 
-import (
-	"strconv"
-)
+import "encoding/json"
 
-type APIError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Err     error  `json:"error"`
-
-	RequestObject interface{} `json:"-"`
-	RawResponse   *[]byte     `json:"-"`
+func UnmarshalErrorResponse(data []byte) (ErrorResponseWrapper, error) {
+	var r ErrorResponseWrapper
+	err := json.Unmarshal(data, &r)
+	return r, err
 }
 
-func NewAPIError(code int, message string, err error, requestObject interface{}, rawResponse *[]byte) *APIError {
-	return &APIError{Code: code, Message: message, Err: err, RequestObject: requestObject, RawResponse: rawResponse}
+type ErrorResponseWrapper struct {
+	Response ErrorResponse `json:"response"`
 }
 
-func (e APIError) Error() string {
-	if e.Err != nil {
-		return "HTTP error: " + e.Message + " (" + strconv.Itoa(e.Code) + ")" + " " + e.Err.Error()
-	}
-
-	return "HTTP error: " + e.Message + " (" + strconv.Itoa(e.Code) + ")"
+type ErrorResponse struct {
+	ErrorCode    int64  `json:"error_code"`
+	ErrorMessage string `json:"error_message"`
+	RequestID    string `json:"request_id"`
 }

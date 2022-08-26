@@ -43,11 +43,11 @@ func main() {
 		MerchantString: "Test Merchant",
 	}
 
-	invoiceId := uuid.MustParse("4eeefd24-d9d0-48a2-9f21-31138c0f6447")
+	invoiceId := uuid.MustParse("45057a5b-b6e2-4953-ae2d-86d66621b637")
 
 	captureAmount := float64(1)
 
-	capturePayment, err := fondyGateway.CapturePayment(merchAccount, &invoiceId, &captureAmount)
+	capturePayment, err := fondyGateway.Capture(merchAccount, &invoiceId, &captureAmount)
 	if err != nil {
 		log.Fatal(err)
 	}

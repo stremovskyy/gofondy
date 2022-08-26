@@ -39,8 +39,8 @@ func main() {
 	fondyGateway := gofondy.New(models.DefaultOptions())
 
 	merchAccount := &models.MerchantAccount{
-		MerchantID:       examples.MerchantId,
-		MerchantKey:      examples.MerchantKey,
+		MerchantID:       examples.TechMerchantId,
+		MerchantKey:      examples.TechMerchantKey,
 		MerchantString:   "Test Merchant",
 		MerchantDesignID: examples.DesignId,
 		IsTechnical:      true,
