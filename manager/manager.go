@@ -123,10 +123,10 @@ func (m *manager) Verify(request *models.RequestObject, merchantAccount *models.
 	return m.client.payment(consts.FondyURLGetVerification, request, merchantAccount)
 }
 
-func (m *manager) SplitRefund(order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.client.split(consts.FondyURLRefund, order, merchantAccount)
-}
-
 func (m *manager) SplitPayment(order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
 	return m.client.split(consts.FondySettlement, order, merchantAccount)
+}
+
+func (m *manager) SplitRefund(order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+	return m.client.split(consts.FondyURLRefund, order, merchantAccount)
 }

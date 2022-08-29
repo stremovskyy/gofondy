@@ -127,17 +127,17 @@ func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, 
 
 	raw, err := g.manager.RefundPayment(request, account)
 	if err != nil {
-		return nil, models.NewAPIError(800, "Http request failed", err, request, raw)
+		return nil, models.NewAPIError(800, "REFUND: API ERROR", err, request, raw)
 	}
 
 	fondyResponse, err := models.UnmarshalStatusResponse(*raw)
 	if err != nil {
-		return nil, models.NewAPIError(801, "Unmarshal response fail", err, request, raw)
+		return nil, models.NewAPIError(801, "REFUND: Unmarshal refund response fail", err, request, raw)
 	}
 
 	err = fondyResponse.Error()
 	if err != nil {
-		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
+		return nil, models.NewAPIError(802, "REFUND: fondy gate returned an error", err, request, raw)
 	}
 
 	return &fondyResponse.Response, nil
@@ -168,7 +168,17 @@ func (g *gateway) SplitRefund(account *models.MerchantAccount, invoiceId *uuid.U
 		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
 	}
 
-	return fondyResponse.Order()
+	order, err := fondyResponse.Order()
+	if err != nil {
+		return nil, err
+	}
+
+	if order.ReverseStatus == nil || (*order.ReverseStatus != "success" && *order.ReverseStatus != "approved") {
+		err = fmt.Errorf("reverse status is %s, (%s)", *order.ReverseStatus, *order.ResponseDescription)
+		return nil, models.NewAPIError(803, "Fondy Gate Response Failure", err, request, raw)
+	}
+
+	return order, nil
 }
 
 func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, token string) (*models_v2.Order, error) {
@@ -194,9 +204,11 @@ func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, t
 		return nil, errors.New("split accounts problem: order is not captured")
 	}
 
+	amount := orderData.CapturedAmount() * 100
+
 	order := &models_v2.Order{
 		MerchantID:  account.MerchantIDInt(),
-		Amount:      orderData.Amount,
+		Amount:      utils.StringRef(fmt.Sprintf("%.f", amount)),
 		OrderID:     utils.StringRef(uuid.NewString()),
 		Currency:    utils.StringRef(string(consts.CurrencyCodeUAH)),
 		OrderType:   utils.StringRef("settlement"),

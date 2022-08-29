@@ -27,7 +27,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy"
@@ -68,7 +67,7 @@ func main() {
 		IsTechnical:    true,
 	}
 
-	invoiceId := uuid.MustParse("45057a5b-b6e2-4953-ae2d-86d66621b637")
+	invoiceId := uuid.MustParse("a534be84-c5d5-46d3-b858-36a46bbb0dea")
 
 	status, err := fondyGateway.Status(techAccount, &invoiceId)
 	if err != nil {
@@ -81,8 +80,7 @@ func main() {
 		fmt.Printf("Error: %s\n", status.ErrorMessage)
 	}
 
-	captureAmount, err := strconv.ParseFloat(*status.Amount, 64)
-	captureAmount /= 100
+	captureAmount := status.CapturedAmount()
 
 	refundPayment, err := fondyGateway.SplitRefund(techAccount, &invoiceId, &captureAmount)
 	if err != nil {

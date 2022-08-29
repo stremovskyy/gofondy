@@ -258,3 +258,21 @@ func (o *OrderData) SplitedAmount() float64 {
 
 	return amount / 100
 }
+
+func (o *OrderData) CapturedAmount() float64 {
+	if o == nil || o.FeeOplata == nil {
+		return 0
+	}
+
+	info := o.Additional()
+
+	if info.CaptureStatus != consts.FondyCaptureStatusCaptured {
+		return 0
+	}
+
+	if info.CaptureAmount == nil {
+		return 0
+	}
+
+	return *info.CaptureAmount
+}

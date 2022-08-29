@@ -24,6 +24,10 @@
 
 package models_v2
 
+type OrderWrapper struct {
+	Order Order `json:"order"`
+}
+
 type Order struct {
 	PaymentID           *int64        `json:"payment_id,omitempty"`
 	Fee                 *string       `json:"fee,omitempty"`
@@ -39,7 +43,7 @@ type Order struct {
 	ResponseDescription *string       `json:"response_description,omitempty"`
 	MerchantID          int64         `json:"merchant_id,omitempty"`
 	OrderTime           *string       `json:"order_time,omitempty"`
-	ResponseCode        *string       `json:"response_code,omitempty"`
+	ResponseCode        interface{}   `json:"response_code,omitempty"`
 	SettlementCurrency  *string       `json:"settlement_currency,omitempty"`
 	ServerCallbackURL   *string       `json:"server_callback_url,omitempty"`
 	Rectoken            *string       `json:"rectoken,omitempty"`
@@ -48,6 +52,10 @@ type Order struct {
 	ResponseURL         *string       `json:"response_url,omitempty"`
 	OrderDesc           *string       `json:"order_desc,omitempty"`
 	Receiver            []Receiver    `json:"receiver,omitempty"`
+	ReverseStatus       *string       `json:"reverse_status,omitempty"`
+	ResponseStatus      string        `json:"response_status,omitempty"`
+	ReverseID           *string       `json:"reverse_id,omitempty"`
+	TransactionID       *string       `json:"transaction_id,omitempty"`
 }
 
 func (o *Order) AddReceiver(receiver *Receiver) {

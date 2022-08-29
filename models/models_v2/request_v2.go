@@ -45,12 +45,11 @@ type Request struct {
 }
 
 func NewRequest(order *Order) *RequestWrapper {
+	if order == nil {
+		return nil
+	}
 
-	envelope := struct {
-		Order *Order `json:"order"`
-	}{Order: order}
-
-	dataEncoded, _ := encodeToBase64(envelope)
+	dataEncoded, _ := encodeToBase64(OrderWrapper{Order: *order})
 
 	return &RequestWrapper{
 		Request{Version: 2.0, Data: dataEncoded},

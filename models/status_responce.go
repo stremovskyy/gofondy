@@ -27,6 +27,7 @@ package models
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/karmadon/gofondy/consts"
@@ -59,6 +60,24 @@ func (r *StatusResponse) Error() error {
 		}
 
 		return errors.New(errString)
+	}
+
+	if r.Response.ResponseCode != nil {
+		if r.Response.ResponseDescription != nil {
+			if code, ok := r.Response.ResponseCode.(string); ok {
+				if code == "" {
+					return nil
+				}
+
+				return errors.New(fmt.Sprintf("code: %s: %s", code, *r.Response.ResponseDescription))
+			}
+
+			if code, ok := r.Response.ResponseCode.(int64); ok {
+				return errors.New(fmt.Sprintf("code: %d: %s", code, *r.Response.ResponseDescription))
+			}
+
+			return fmt.Errorf("~ %#v: %s", r.Response.ResponseCode, *r.Response.ResponseDescription)
+		}
 	}
 
 	return nil

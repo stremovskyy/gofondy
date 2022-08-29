@@ -60,16 +60,25 @@ func (w *ResponseWrapper) SignIsValid(key string) bool {
 }
 
 func (w *ResponseWrapper) Error() error {
-	return nil // TODO: implement
+	order, err := w.Order()
+	if err != nil {
+		return fmt.Errorf("error while getting order: %w", err)
+	}
+
+	if order.ResponseStatus != "success" && order.ResponseStatus != "created" {
+		return fmt.Errorf("order status is %s, code: %s", order.ResponseStatus, order.ResponseCode)
+	}
+
+	return nil
 }
 
 func (w *ResponseWrapper) Order() (*Order, error) {
-	var order Order
+	var wrapper OrderWrapper
 
-	err := json.Unmarshal(w.Response.Data, &order)
+	err := json.Unmarshal(w.Response.Data, &wrapper)
 	if err != nil {
 		return nil, err
 	}
 
-	return &order, nil
+	return &wrapper.Order, nil
 }

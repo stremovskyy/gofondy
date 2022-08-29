@@ -43,7 +43,7 @@ func main() {
 		MerchantString: "Test Merchant",
 	}
 
-	invoiceId := uuid.MustParse("45057a5b-b6e2-4953-ae2d-86d66621b637")
+	invoiceId := uuid.MustParse("a534be84-c5d5-46d3-b858-36a46bbb0dea")
 
 	captureAmount := float64(1)
 

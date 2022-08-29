@@ -24,7 +24,11 @@
 
 package models
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/karmadon/gofondy/consts"
+)
 
 func UnmarshalAdditionalInfo(data []byte) (AdditionalInfo, error) {
 	var r AdditionalInfo
@@ -33,20 +37,20 @@ func UnmarshalAdditionalInfo(data []byte) (AdditionalInfo, error) {
 }
 
 type AdditionalInfo struct {
-	CaptureStatus           *string     `json:"capture_status,omitempty"`
-	CaptureAmount           *int64      `json:"capture_amount,omitempty"`
-	ReservationData         interface{} `json:"reservation_data"`
-	TransactionID           *int64      `json:"transaction_id,omitempty"`
-	BankResponseCode        *string     `json:"bank_response_code"`
-	BankResponseDescription *string     `json:"bank_response_description"`
-	ClientFee               *int64      `json:"client_fee,omitempty"`
-	SettlementFee           *float64    `json:"settlement_fee,omitempty"`
-	BankName                *string     `json:"bank_name,omitempty"`
-	BankCountry             *string     `json:"bank_country,omitempty"`
-	CardType                *string     `json:"card_type,omitempty"`
-	CardProduct             *string     `json:"card_product,omitempty"`
-	CardCategory            *string     `json:"card_category,omitempty"`
-	Timeend                 *string     `json:"timeend,omitempty"`
-	IpaddressV4             *string     `json:"ipaddress_v4,omitempty"`
-	PaymentMethod           *string     `json:"payment_method,omitempty"`
+	CaptureStatus           consts.FondyCaptureStatus `json:"capture_status,omitempty"`
+	CaptureAmount           *float64                  `json:"capture_amount,omitempty"`
+	ReservationData         interface{}               `json:"reservation_data"`
+	TransactionID           *int64                    `json:"transaction_id,omitempty"`
+	BankResponseCode        *string                   `json:"bank_response_code"`
+	BankResponseDescription *string                   `json:"bank_response_description"`
+	ClientFee               *int64                    `json:"client_fee,omitempty"`
+	SettlementFee           *float64                  `json:"settlement_fee,omitempty"`
+	BankName                *string                   `json:"bank_name,omitempty"`
+	BankCountry             *string                   `json:"bank_country,omitempty"`
+	CardType                *string                   `json:"card_type,omitempty"`
+	CardProduct             *string                   `json:"card_product,omitempty"`
+	CardCategory            *string                   `json:"card_category,omitempty"`
+	Timeend                 *string                   `json:"timeend,omitempty"`
+	IpaddressV4             *string                   `json:"ipaddress_v4,omitempty"`
+	PaymentMethod           *string                   `json:"payment_method,omitempty"`
 }
