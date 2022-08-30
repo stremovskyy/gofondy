@@ -25,6 +25,8 @@
 package gofondy
 
 import (
+	"net/url"
+
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/models"
@@ -32,12 +34,12 @@ import (
 )
 
 type FondyGateway interface {
-	VerificationLink(account *models.MerchantAccount, invoiceId uuid.UUID, email *string, note string, code consts.CurrencyCode) (*string, error)
-	Status(account *models.MerchantAccount, invoiceId *uuid.UUID) (*models.OrderData, error)
-	Payment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error)
-	Hold(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error)
-	Capture(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error)
-	Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error)
+	VerificationLink(account *models.MerchantAccount, invoiceId uuid.UUID, email *string, note string, code consts.CurrencyCode) (*url.URL, error)
+	Status(account *models.MerchantAccount, invoiceId *uuid.UUID) (*models.Order, error)
+	Payment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.Order, error)
+	Hold(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.Order, error)
+	Capture(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.Order, error)
+	Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.Order, error)
 	Split(account *models.MerchantAccount, invoiceId *uuid.UUID, token string) (*models_v2.Order, error)
 	SplitRefund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models_v2.Order, error)
 }

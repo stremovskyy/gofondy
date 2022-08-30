@@ -30,6 +30,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy"
+	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/examples"
 	"github.com/karmadon/gofondy/models"
 )
@@ -50,9 +51,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if *status.ResponseStatus == "success" {
+	if *status.ResponseStatus == consts.FondyResponseStatusSuccess {
 		fmt.Printf("Order status: %s\n", *status.OrderStatus)
 	} else {
-		fmt.Printf("Error: %s\n", status.ErrorMessage)
+		fmt.Printf("Error: %s\n", *status.ErrorMessage)
 	}
 }

@@ -28,6 +28,8 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+
+	"github.com/karmadon/gofondy/consts"
 )
 
 func UnmarshalResponse(data []byte) (ResponseWrapper, error) {
@@ -65,7 +67,7 @@ func (w *ResponseWrapper) Error() error {
 		return fmt.Errorf("error while getting order: %w", err)
 	}
 
-	if order.ResponseStatus != "success" && order.ResponseStatus != "created" {
+	if order.ResponseStatus != consts.FondyResponseStatusSuccess && order.ResponseStatus != consts.FondyResponseStatusCreated {
 		return fmt.Errorf("order status is %s, code: %s", order.ResponseStatus, order.ResponseCode)
 	}
 

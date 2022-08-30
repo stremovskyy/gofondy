@@ -30,6 +30,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy"
+	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/examples"
 	"github.com/karmadon/gofondy/models"
 )
@@ -52,9 +53,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if *paymentByToken.ResponseStatus == "success" {
+	if *paymentByToken.ResponseStatus == consts.FondyResponseStatusSuccess {
 		fmt.Printf("Order (%s) status: %s\n", paymentByToken.OrderID, *paymentByToken.OrderStatus)
 	} else {
-		fmt.Printf("Error: %s\n", paymentByToken.ErrorMessage)
+		fmt.Printf("Error: %s\n", *paymentByToken.ErrorMessage)
 	}
 }

@@ -24,38 +24,42 @@
 
 package models_v2
 
+import (
+	"github.com/karmadon/gofondy/consts"
+)
+
 type OrderWrapper struct {
 	Order Order `json:"order"`
 }
 
 type Order struct {
-	PaymentID           *int64        `json:"payment_id,omitempty"`
-	Fee                 *string       `json:"fee,omitempty"`
-	OrderType           *string       `json:"order_type,omitempty"`
-	ReversalAmount      *string       `json:"reversal_amount,omitempty"`
-	OrderID             *string       `json:"order_id,omitempty"`
-	SettlementAmount    *string       `json:"settlement_amount,omitempty"`
-	MerchantData        *string       `json:"merchant_data,omitempty"`
-	SettlementDate      *string       `json:"settlement_date,omitempty"`
-	Transaction         []Transaction `json:"transaction,omitempty"`
-	OperationID         *string       `json:"operation_id,omitempty"`
-	OrderStatus         *string       `json:"order_status,omitempty"`
-	ResponseDescription *string       `json:"response_description,omitempty"`
-	MerchantID          int64         `json:"merchant_id,omitempty"`
-	OrderTime           *string       `json:"order_time,omitempty"`
-	ResponseCode        interface{}   `json:"response_code,omitempty"`
-	SettlementCurrency  *string       `json:"settlement_currency,omitempty"`
-	ServerCallbackURL   *string       `json:"server_callback_url,omitempty"`
-	Rectoken            *string       `json:"rectoken,omitempty"`
-	Currency            *string       `json:"currency,omitempty"`
-	Amount              *string       `json:"amount,omitempty"`
-	ResponseURL         *string       `json:"response_url,omitempty"`
-	OrderDesc           *string       `json:"order_desc,omitempty"`
-	Receiver            []Receiver    `json:"receiver,omitempty"`
-	ReverseStatus       *string       `json:"reverse_status,omitempty"`
-	ResponseStatus      string        `json:"response_status,omitempty"`
-	ReverseID           *string       `json:"reverse_id,omitempty"`
-	TransactionID       *string       `json:"transaction_id,omitempty"`
+	PaymentID           *int64                     `json:"payment_id,omitempty"`
+	Fee                 *string                    `json:"fee,omitempty"`
+	OrderType           *string                    `json:"order_type,omitempty"`
+	ReversalAmount      *string                    `json:"reversal_amount,omitempty"`
+	OrderID             *string                    `json:"order_id,omitempty"`
+	SettlementAmount    *string                    `json:"settlement_amount,omitempty"`
+	MerchantData        *string                    `json:"merchant_data,omitempty"`
+	SettlementDate      *string                    `json:"settlement_date,omitempty"`
+	Transaction         []Transaction              `json:"transaction,omitempty"`
+	OperationID         *string                    `json:"operation_id,omitempty"`
+	OrderStatus         *string                    `json:"order_status,omitempty"`
+	ResponseDescription *string                    `json:"response_description,omitempty"`
+	MerchantID          int64                      `json:"merchant_id,omitempty"`
+	OrderTime           *string                    `json:"order_time,omitempty"`
+	ResponseCode        interface{}                `json:"response_code,omitempty"`
+	SettlementCurrency  *string                    `json:"settlement_currency,omitempty"`
+	ServerCallbackURL   *string                    `json:"server_callback_url,omitempty"`
+	Rectoken            *string                    `json:"rectoken,omitempty"`
+	Currency            *string                    `json:"currency,omitempty"`
+	Amount              *string                    `json:"amount,omitempty"`
+	ResponseURL         *string                    `json:"response_url,omitempty"`
+	OrderDesc           *string                    `json:"order_desc,omitempty"`
+	Receiver            []Receiver                 `json:"receiver,omitempty"`
+	ReverseStatus       consts.FondyReverseStatus  `json:"reverse_status,omitempty"`
+	ResponseStatus      consts.FondyResponseStatus `json:"response_status,omitempty"`
+	ReverseID           *string                    `json:"reverse_id,omitempty"`
+	TransactionID       *string                    `json:"transaction_id,omitempty"`
 }
 
 func (o *Order) AddReceiver(receiver *Receiver) {

@@ -36,7 +36,7 @@ import (
 	"github.com/karmadon/gofondy/consts"
 )
 
-type OrderData struct {
+type Order struct {
 	ErrorMessage            *string                      `json:"error_message"`
 	Rrn                     *string                      `json:"rrn"`
 	MaskedCard              *string                      `json:"masked_card"`
@@ -83,7 +83,7 @@ type OrderData struct {
 }
 
 // Additional returns additional info from order
-func (o *OrderData) Additional() *AdditionalInfo {
+func (o *Order) Additional() *AdditionalInfo {
 	if o.AdditionalInfo == nil {
 		return nil
 	}
@@ -96,7 +96,7 @@ func (o *OrderData) Additional() *AdditionalInfo {
 	return o.additional
 }
 
-func (o *OrderData) SignValid(merchantKey string) bool {
+func (o *Order) SignValid(merchantKey string) bool {
 	if o.Signature == nil {
 		return false
 	}
@@ -152,7 +152,7 @@ func (o *OrderData) SignValid(merchantKey string) bool {
 	return true
 }
 
-func (o *OrderData) Captured() bool {
+func (o *Order) Captured() bool {
 	if o == nil {
 		return false
 	}
@@ -164,7 +164,7 @@ func (o *OrderData) Captured() bool {
 	return false
 }
 
-func (o *OrderData) Reversed() bool {
+func (o *Order) Reversed() bool {
 	if o == nil {
 		return false
 	}
@@ -180,7 +180,7 @@ func (o *OrderData) Reversed() bool {
 	return false
 }
 
-func (o *OrderData) Undefined() bool {
+func (o *Order) Undefined() bool {
 	if o == nil && o.OrderStatus == nil {
 		return false
 	}
@@ -192,7 +192,7 @@ func (o *OrderData) Undefined() bool {
 	return false
 }
 
-func (o *OrderData) UncompletedHold() bool {
+func (o *Order) UncompletedHold() bool {
 	if o == nil && o.OrderStatus == nil {
 		return false
 	}
@@ -204,7 +204,7 @@ func (o *OrderData) UncompletedHold() bool {
 	return false
 }
 
-func (o *OrderData) Declined() bool {
+func (o *Order) Declined() bool {
 	if o == nil && o.OrderStatus == nil {
 		return false
 	}
@@ -212,7 +212,7 @@ func (o *OrderData) Declined() bool {
 	return *o.OrderStatus == consts.StatusDeclined
 }
 
-func (o *OrderData) Expired() bool {
+func (o *Order) Expired() bool {
 	if o == nil && o.OrderStatus == nil {
 		return false
 	}
@@ -220,7 +220,7 @@ func (o *OrderData) Expired() bool {
 	return *o.OrderStatus == consts.StatusExpired
 }
 
-func (o *OrderData) RealAmount() float64 {
+func (o *Order) RealAmount() float64 {
 	if o == nil || o.Amount == nil {
 		return 0
 	}
@@ -233,7 +233,7 @@ func (o *OrderData) RealAmount() float64 {
 	return amount / 100
 }
 
-func (o *OrderData) ReversedAmount() float64 {
+func (o *Order) ReversedAmount() float64 {
 	if o == nil || o.ReversalAmount == nil {
 		return 0
 	}
@@ -246,7 +246,7 @@ func (o *OrderData) ReversedAmount() float64 {
 	return amount / 100
 }
 
-func (o *OrderData) SplitedAmount() float64 {
+func (o *Order) SplitedAmount() float64 {
 	if o == nil || o.SettlementAmount == nil {
 		return 0
 	}
@@ -259,7 +259,7 @@ func (o *OrderData) SplitedAmount() float64 {
 	return amount / 100
 }
 
-func (o *OrderData) CapturedAmount() float64 {
+func (o *Order) CapturedAmount() float64 {
 	if o == nil || o.FeeOplata == nil {
 		return 0
 	}

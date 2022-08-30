@@ -65,7 +65,7 @@ func (w *RequestWrapper) Sign(key string) *RequestWrapper {
 		return nil
 	}
 
-	s := key + "|" + string(w.Request.Data)
+	s := key + "|" + w.Request.Data
 	h := sha1.New()
 	h.Write([]byte(s))
 	w.Request.Signature = fmt.Sprintf("%x", h.Sum(nil))

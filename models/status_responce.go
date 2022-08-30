@@ -40,7 +40,7 @@ func UnmarshalStatusResponse(data []byte) (StatusResponse, error) {
 }
 
 type StatusResponse struct {
-	Response OrderData `json:"response"`
+	Response Order `json:"response"`
 }
 
 func (r *StatusResponse) Error() error {

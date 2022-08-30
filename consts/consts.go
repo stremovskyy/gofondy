@@ -48,6 +48,7 @@ type FondyResponseStatus string
 const (
 	FondyResponseStatusSuccess FondyResponseStatus = "success"
 	FondyResponseStatusFailure FondyResponseStatus = "failure"
+	FondyResponseStatusCreated FondyResponseStatus = "created"
 )
 
 func (s FondyResponseStatus) String() string {
@@ -100,6 +101,7 @@ const (
 	FondyReverseStatusDeclined FondyReverseStatus = "declined"
 	// FondyReverseStatusApproved reversal completed successfully
 	FondyReverseStatusApproved FondyReverseStatus = "approved"
+	FondyReverseStatusSuccess  FondyReverseStatus = "success"
 )
 
 type Status string

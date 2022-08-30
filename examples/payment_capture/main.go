@@ -30,6 +30,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/karmadon/gofondy"
+	"github.com/karmadon/gofondy/consts"
 	"github.com/karmadon/gofondy/examples"
 	"github.com/karmadon/gofondy/models"
 )
@@ -43,18 +44,18 @@ func main() {
 		MerchantString: "Test Merchant",
 	}
 
-	invoiceId := uuid.MustParse("a534be84-c5d5-46d3-b858-36a46bbb0dea")
+	invoiceId := uuid.MustParse("767f44ef-2997-4623-961f-9ee081ef730f")
 
-	captureAmount := float64(1)
+	captureAmount := float64(3)
 
 	capturePayment, err := fondyGateway.Capture(merchAccount, &invoiceId, &captureAmount)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if *capturePayment.ResponseStatus == "success" {
+	if *capturePayment.ResponseStatus == consts.FondyResponseStatusSuccess {
 		fmt.Printf("Order (%s) Capture Status: %s\n", capturePayment.OrderID.String(), *capturePayment.CaptureStatus)
 	} else {
-		fmt.Printf("Error: %s\n", capturePayment.ErrorMessage)
+		fmt.Printf("Error: %s\n", *capturePayment.ErrorMessage)
 	}
 }

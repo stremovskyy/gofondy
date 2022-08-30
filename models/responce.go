@@ -69,7 +69,7 @@ type ResponseObject struct {
 	ResponseURL    *string                    `json:"response_url"`
 	ResponseStatus consts.FondyResponseStatus `json:"response_status"`
 	Pending        bool                       `json:"pending"`
-	OrderData      OrderData                  `json:"order_data"`
+	OrderData      Order                      `json:"order_data"`
 	APIVersion     string                     `json:"api_version"`
 	PaymentID      *string                    `json:"payment_id"`
 	CheckoutURL    *string                    `json:"checkout_url"`

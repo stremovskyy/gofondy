@@ -67,7 +67,7 @@ func main() {
 		IsTechnical:    true,
 	}
 
-	invoiceId := uuid.MustParse("a534be84-c5d5-46d3-b858-36a46bbb0dea")
+	invoiceId := uuid.MustParse("767f44ef-2997-4623-961f-9ee081ef730f")
 
 	intermediateResponse, err := fondyGateway.Split(techAccount, &invoiceId, examples.CardToken)
 	if err != nil {

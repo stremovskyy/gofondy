@@ -27,6 +27,7 @@ package gofondy
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -49,7 +50,7 @@ func New(options *models.Options) FondyGateway {
 	}
 }
 
-func (g *gateway) VerificationLink(account *models.MerchantAccount, invoiceId uuid.UUID, email *string, note string, code consts.CurrencyCode) (*string, error) {
+func (g *gateway) VerificationLink(account *models.MerchantAccount, invoiceId uuid.UUID, email *string, note string, code consts.CurrencyCode) (*url.URL, error) {
 	fondyVerificationAmount := g.options.VerificationAmount * 100
 	lf := strconv.FormatFloat(g.options.VerificationLifeTime.Seconds(), 'f', 2, 64)
 	cbu := g.options.CallbackBaseURL + g.options.CallbackUrl
@@ -88,10 +89,10 @@ func (g *gateway) VerificationLink(account *models.MerchantAccount, invoiceId uu
 		return nil, models.NewAPIError(802, "No Url In Response", err, request, raw)
 	}
 
-	return fondyResponse.Response.CheckoutURL, nil
+	return url.Parse(*fondyResponse.Response.CheckoutURL)
 }
 
-func (g *gateway) Status(account *models.MerchantAccount, invoiceId *uuid.UUID) (*models.OrderData, error) {
+func (g *gateway) Status(account *models.MerchantAccount, invoiceId *uuid.UUID) (*models.Order, error) {
 	request := &models.RequestObject{
 		MerchantID: &account.MerchantID,
 		OrderID:    utils.StringRef(invoiceId.String()),
@@ -115,7 +116,7 @@ func (g *gateway) Status(account *models.MerchantAccount, invoiceId *uuid.UUID) 
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error) {
+func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.Order, error) {
 	refundAmount := *amount * 100
 
 	request := &models.RequestObject{
@@ -173,8 +174,8 @@ func (g *gateway) SplitRefund(account *models.MerchantAccount, invoiceId *uuid.U
 		return nil, err
 	}
 
-	if order.ReverseStatus == nil || (*order.ReverseStatus != "success" && *order.ReverseStatus != "approved") {
-		err = fmt.Errorf("reverse status is %s, (%s)", *order.ReverseStatus, *order.ResponseDescription)
+	if order.ReverseStatus != consts.FondyReverseStatusSuccess && order.ReverseStatus != consts.FondyReverseStatusApproved {
+		err = fmt.Errorf("reverse status is %s, (%s)", order.ReverseStatus, *order.ResponseDescription)
 		return nil, models.NewAPIError(803, "Fondy Gate Response Failure", err, request, raw)
 	}
 
@@ -235,7 +236,7 @@ func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, t
 	return fondyResponse.Order()
 }
 
-func (g *gateway) Payment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error) {
+func (g *gateway) Payment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.Order, error) {
 	paymentAmount := *amount * 100
 
 	request := &models.RequestObject{
@@ -266,7 +267,7 @@ func (g *gateway) Payment(account *models.MerchantAccount, invoiceId *uuid.UUID,
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) Hold(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.OrderData, error) {
+func (g *gateway) Hold(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.Order, error) {
 	holdAmount := *amount * 100
 
 	request := &models.RequestObject{
@@ -297,7 +298,7 @@ func (g *gateway) Hold(account *models.MerchantAccount, invoiceId *uuid.UUID, am
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) Capture(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.OrderData, error) {
+func (g *gateway) Capture(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.Order, error) {
 	captureAmount := *amount * 100
 
 	request := &models.RequestObject{

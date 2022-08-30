@@ -51,5 +51,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nVerification link: %s\n", *verificationLink)
+	fmt.Printf("\nVerification link: %s\n", verificationLink.String())
 }
