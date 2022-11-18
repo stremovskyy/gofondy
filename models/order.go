@@ -169,7 +169,7 @@ func (o *Order) Reversed() bool {
 		return false
 	}
 
-	if o.OrderStatus != nil && *o.OrderStatus == consts.StatusReversed && o.ReversalAmount != nil && *o.ReversalAmount != "" {
+	if o.OrderStatus != nil && *o.OrderStatus == consts.StatusReversed && o.ReversalAmount != nil && *o.ReversalAmount != "" && *o.ReversalAmount != "0" {
 		return true
 	}
 
