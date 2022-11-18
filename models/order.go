@@ -185,7 +185,7 @@ func (o *Order) Undefined() bool {
 		return false
 	}
 
-	if *o.OrderStatus == consts.StatusApproved && o.ReversalAmount != nil && *o.ReversalAmount != "" {
+	if *o.OrderStatus == consts.StatusApproved && o.ReversalAmount != nil && *o.ReversalAmount != "" && *o.ReversalAmount != "0" {
 		return true
 	}
 
