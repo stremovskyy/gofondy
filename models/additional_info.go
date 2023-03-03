@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2022 Anton (karmadon) Stremovskyy <stremovskyy@gmail.com>
+ * Copyright (c) 2022 Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@ package models
 import (
 	"encoding/json"
 
-	"github.com/karmadon/gofondy/consts"
+	"github.com/stremovskyy/gofondy/consts"
 )
 
 func UnmarshalAdditionalInfo(data []byte) (AdditionalInfo, error) {

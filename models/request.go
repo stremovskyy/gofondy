@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2022 Anton (karmadon) Stremovskyy <stremovskyy@gmail.com>
+ * Copyright (c) 2022 Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/karmadon/gofondy/utils"
+	"github.com/stremovskyy/gofondy/utils"
 )
 
 type Request struct {

@@ -6,7 +6,7 @@
  * @link https://www.megakit.pro
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
- * Written by Anton (karmadon) Stremovskyy <stremovskyy@gmail.com>
+ * Written by Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
  */
 
 package manager
@@ -17,9 +17,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/karmadon/gofondy/consts"
-	"github.com/karmadon/gofondy/models"
-	"github.com/karmadon/gofondy/models/models_v2"
+	"github.com/stremovskyy/gofondy/consts"
+	"github.com/stremovskyy/gofondy/models"
+	"github.com/stremovskyy/gofondy/models/models_v2"
 )
 
 type Client interface {

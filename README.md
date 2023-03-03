@@ -1,6 +1,6 @@
 # Gofondy - Fondy Payment Gate Client 
 
-[![GoDoc](https://godoc.org/github.com/karmadon/gofondy?status.svg)](https://godoc.org/github.com/karmadon/gofondy)
+[![GoDoc](https://godoc.org/github.com/stremovskyy/gofondy?status.svg)](https://godoc.org/github.com/stremovskyy/gofondy)
 
 **gofondy** is GO client for the Fondy Payment Gate API.  
 
@@ -18,7 +18,7 @@
 ## Installation
 
 ```bash
-go get github.com/karmadon/gofondy
+go get github.com/stremovskyy/gofondy
 ```
 
 ## Usage
@@ -129,11 +129,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 - [Fondy API Documentation](https://docs.fondy.eu/en/)
-- [GoDoc](https://godoc.org/github.com/karmadon/gofondy)
+- [GoDoc](https://godoc.org/github.com/stremovskyy/gofondy)
 
 ## Author
 
-* **Anton Stremovskyy** - *Initial work* - [Karmadon](https://github.com/karmadon)
+* **Anton Stremovskyy** - *Initial work* - [stremovskyy](https://github.com/stremovskyy)
 
 ### Contributing
 
