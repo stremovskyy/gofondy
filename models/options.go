@@ -39,6 +39,7 @@ type Options struct {
 
 	CallbackBaseURL string
 	CallbackUrl     string
+	IsDebug         bool
 }
 
 func DefaultOptions() *Options {

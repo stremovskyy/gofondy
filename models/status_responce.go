@@ -27,10 +27,8 @@ package models
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"strconv"
-
 	"github.com/stremovskyy/gofondy/consts"
+	"strconv"
 )
 
 func UnmarshalStatusResponse(data []byte) (StatusResponse, error) {
@@ -56,10 +54,10 @@ func (r *StatusResponse) Error() error {
 		}
 
 		if r.Response.ErrorCode != nil {
-			errString += " Code: " + strconv.Itoa(int(*r.Response.ErrorCode))
+			return NewFatalFondyError(int(*r.Response.ErrorCode), errString)
 		}
 
-		return errors.New(errString)
+		return NewFatalFondyError(-1, errString)
 	}
 
 	if r.Response.ResponseCode != nil {
@@ -69,14 +67,18 @@ func (r *StatusResponse) Error() error {
 					return nil
 				}
 
-				return errors.New(fmt.Sprintf("code: %s: %s", code, *r.Response.ResponseDescription))
+				return NewFondyError(code, *r.Response.ResponseDescription)
 			}
 
 			if code, ok := r.Response.ResponseCode.(int64); ok {
-				return errors.New(fmt.Sprintf("code: %d: %s", code, *r.Response.ResponseDescription))
+				return NewFondyError(strconv.FormatInt(code, 10), *r.Response.ResponseDescription)
 			}
 
-			return fmt.Errorf("~ %#v: %s", r.Response.ResponseCode, *r.Response.ResponseDescription)
+			if code, ok := r.Response.ResponseCode.(float64); ok {
+				return NewFondyError(strconv.FormatFloat(code, 'f', -1, 64), *r.Response.ResponseDescription)
+			}
+
+			return NewFondyError("-1", *r.Response.ResponseDescription)
 		}
 	}
 
