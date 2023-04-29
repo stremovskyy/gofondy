@@ -24,6 +24,20 @@
 
 package utils
 
+import (
+	"encoding/base64"
+	"encoding/json"
+)
+
 func StringRef(s string) *string {
 	return &s
+}
+
+func Base64StructEncode(s interface{}) (string, error) {
+	jsonString, err := json.Marshal(s)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(jsonString), nil
 }

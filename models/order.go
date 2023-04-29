@@ -66,7 +66,7 @@ type Order struct {
 	ApprovalCode            *string                      `json:"approval_code"`
 	MerchantID              *int                         `json:"merchant_id"`
 	SettlementCurrency      *consts.CurrencyCode         `json:"settlement_currency"`
-	PaymentID               *int                         `json:"payment_id"`
+	PaymentID               *int64                       `json:"payment_id"`
 	ProductID               *string                      `json:"product_id"`
 	Currency                *consts.CurrencyCode         `json:"currency"`
 	CardBin                 interface{}                  `json:"card_bin"`

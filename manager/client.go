@@ -23,9 +23,9 @@ import (
 )
 
 type Client interface {
-	payment(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
+	payment(url consts.FondyURL, request *models.FondyRequestObject, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error)
 	split(url consts.FondyURL, order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error)
-	withdraw(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
+	withdraw(url consts.FondyURL, request *models.FondyRequestObject, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error)
 }
 
 type client struct {
@@ -38,6 +38,7 @@ type ClientOptions struct {
 	KeepAlive       time.Duration
 	MaxIdleConns    int
 	IdleConnTimeout time.Duration
+	IsDebug         bool
 }
 
 func NewClient(options *ClientOptions) Client {
@@ -57,21 +58,19 @@ func NewClient(options *ClientOptions) Client {
 	cl := &http.Client{Transport: tr}
 
 	return &client{
-		v1: &v1Client{
-			client: cl,
-		},
+		v1: newV1Client(cl, options),
 		v2: &v2Client{
 			client: cl,
 		},
 	}
 }
 
-func (m *client) payment(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.v1.do(url, request, false, merchantAccount)
+func (m *client) payment(url consts.FondyURL, request *models.FondyRequestObject, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error) {
+	return m.v1.do(url, request, false, merchantAccount, reservationData)
 }
 
-func (m *client) withdraw(url consts.FondyURL, request *models.RequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error) {
-	return m.v1.do(url, request, true, merchantAccount)
+func (m *client) withdraw(url consts.FondyURL, request *models.FondyRequestObject, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error) {
+	return m.v1.do(url, request, true, merchantAccount, reservationData)
 }
 
 func (m *client) split(url consts.FondyURL, order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {

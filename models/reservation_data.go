@@ -22,27 +22,37 @@
  * SOFTWARE.
  */
 
-package gofondy
+package models
 
 import (
-	"net/url"
-
-	"github.com/google/uuid"
-	"github.com/stremovskyy/gofondy/consts"
-	"github.com/stremovskyy/gofondy/models"
-	"github.com/stremovskyy/gofondy/models/models_v2"
+	"github.com/stremovskyy/gofondy/utils"
+	"strconv"
 )
 
-type FondyGateway interface {
-	VerificationLink(account *models.MerchantAccount, invoiceId uuid.UUID, email *string, note string, code consts.CurrencyCode) (*url.URL, error)
-	Status(invoiceRequest *models.InvoiceRequest) (*models.Order, error)
-	Payment(invoiceRequest *models.InvoiceRequest) (*models.Order, error)
-	Hold(invoiceRequest *models.InvoiceRequest) (*models.Order, error)
-	Capture(invoiceRequest *models.InvoiceRequest) (*models.Order, error)
-	Refund(invoiceRequest *models.InvoiceRequest) (*models.Order, error)
-	Credit(invoiceRequest *models.InvoiceRequest) (*models.Order, error)
+type ReservationData struct {
+	Phonemobile       *string `json:"phonemobile,omitempty"`
+	Account           *string `json:"account,omitempty"`
+	Uuid              *string `json:"uuid,omitempty"`
+	ReceiverInn       *string `json:"receiver_inn,omitempty"`
+	ReceiverPan       *string `json:"receiver_pan,omitempty"`
+	ReceiverToken     *string `json:"receiver_token,omitempty"`
+	PurchasePaymentId *string `json:"purchase_payment_id,omitempty"`
+}
 
-	// V2
-	SplitRefund(invoiceRequest *models.InvoiceRequest) (*models_v2.Order, error)
-	Split(invoiceRequest *models.InvoiceRequest) (*models_v2.Order, error)
+func NewReservationDataForPaymentID(purchasePaymentId *int64) *ReservationData {
+	if purchasePaymentId == nil {
+		return nil
+	}
+
+	id := strconv.Itoa(int(*purchasePaymentId))
+	return &ReservationData{PurchasePaymentId: &id}
+}
+
+func NewReservationDataForReceiverToken(receiverToken *string) *ReservationData {
+	return &ReservationData{ReceiverToken: receiverToken}
+}
+
+func (r *ReservationData) Base64Encoded() *string {
+	b, _ := utils.Base64StructEncode(r)
+	return &b
 }

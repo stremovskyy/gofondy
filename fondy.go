@@ -55,7 +55,7 @@ func (g *gateway) VerificationLink(account *models.MerchantAccount, invoiceId uu
 	lf := strconv.FormatFloat(g.options.VerificationLifeTime.Seconds(), 'f', 2, 64)
 	cbu := g.options.CallbackBaseURL + g.options.CallbackUrl
 
-	request := &models.RequestObject{
+	request := &models.FondyRequestObject{
 		MerchantID:        utils.StringRef(account.MerchantID),
 		DesignID:          &account.MerchantDesignID,
 		Verification:      utils.StringRef("Y"),
@@ -92,13 +92,13 @@ func (g *gateway) VerificationLink(account *models.MerchantAccount, invoiceId uu
 	return url.Parse(*fondyResponse.Response.CheckoutURL)
 }
 
-func (g *gateway) Status(account *models.MerchantAccount, invoiceId *uuid.UUID) (*models.Order, error) {
-	request := &models.RequestObject{
-		MerchantID: &account.MerchantID,
-		OrderID:    utils.StringRef(invoiceId.String()),
+func (g *gateway) Status(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
+	request := &models.FondyRequestObject{
+		MerchantID: invoiceRequest.GetMerchantIDString(),
+		OrderID:    invoiceRequest.GetInvoiceIDString(),
 	}
 
-	raw, err := g.manager.Status(request, account)
+	raw, err := g.manager.Status(request, invoiceRequest.Merchant)
 	if err != nil {
 		return nil, models.NewAPIError(800, "Http request failed", err, request, raw)
 	}
@@ -116,17 +116,15 @@ func (g *gateway) Status(account *models.MerchantAccount, invoiceId *uuid.UUID) 
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.Order, error) {
-	refundAmount := *amount * 100
-
-	request := &models.RequestObject{
-		MerchantID: &account.MerchantID,
-		Amount:     utils.StringRef(fmt.Sprintf("%.f", refundAmount)),
-		OrderID:    utils.StringRef(invoiceId.String()),
+func (g *gateway) Refund(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
+	request := &models.FondyRequestObject{
+		MerchantID: invoiceRequest.GetMerchantIDString(),
+		Amount:     invoiceRequest.GetAmountString(),
+		OrderID:    invoiceRequest.GetInvoiceIDString(),
 		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
 	}
 
-	raw, err := g.manager.RefundPayment(request, account)
+	raw, err := g.manager.RefundPayment(request, invoiceRequest.Merchant)
 	if err != nil {
 		return nil, models.NewAPIError(800, "REFUND: API ERROR", err, request, raw)
 	}
@@ -144,17 +142,15 @@ func (g *gateway) Refund(account *models.MerchantAccount, invoiceId *uuid.UUID, 
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) SplitRefund(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models_v2.Order, error) {
-	refundAmount := *amount * 100
-
+func (g *gateway) SplitRefund(invoiceRequest *models.InvoiceRequest) (*models_v2.Order, error) {
 	request := &models_v2.Order{
-		MerchantID: account.MerchantIDInt(),
-		Amount:     utils.StringRef(fmt.Sprintf("%.f", refundAmount)),
-		OrderID:    utils.StringRef(invoiceId.String()),
+		MerchantID: invoiceRequest.Merchant.MerchantIDInt(),
+		Amount:     invoiceRequest.GetAmountString(),
+		OrderID:    invoiceRequest.GetInvoiceIDString(),
 		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
 	}
 
-	raw, err := g.manager.SplitRefund(request, account)
+	raw, err := g.manager.SplitRefund(request, invoiceRequest.Merchant)
 	if err != nil {
 		return nil, models.NewAPIError(800, "Http request failed", err, request, raw)
 	}
@@ -182,21 +178,21 @@ func (g *gateway) SplitRefund(account *models.MerchantAccount, invoiceId *uuid.U
 	return order, nil
 }
 
-func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, token string) (*models_v2.Order, error) {
-	err := account.SplitAccounts.Error()
+func (g *gateway) Split(invoiceRequest *models.InvoiceRequest) (*models_v2.Order, error) {
+	err := invoiceRequest.Merchant.SplitAccounts.Error()
 	if err != nil {
 		return nil, errors.New("split accounts problem " + err.Error())
 	}
 
-	if !account.IsTechnical {
+	if !invoiceRequest.Merchant.IsTechnical {
 		return nil, errors.New("split accounts problem: only technical accounts can split")
 	}
 
-	if len(account.SplitAccounts) == 0 {
+	if len(invoiceRequest.Merchant.SplitAccounts) == 0 {
 		return nil, errors.New("split accounts problem: no split accounts")
 	}
 
-	orderData, err := g.Status(account, invoiceId)
+	orderData, err := g.Status(invoiceRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -205,20 +201,18 @@ func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, t
 		return nil, errors.New("split accounts problem: order is not captured")
 	}
 
-	amount := orderData.CapturedAmount() * 100
-
 	order := &models_v2.Order{
-		MerchantID:  account.MerchantIDInt(),
-		Amount:      utils.StringRef(fmt.Sprintf("%.f", amount)),
-		OrderID:     utils.StringRef(uuid.NewString()),
+		MerchantID:  invoiceRequest.Merchant.MerchantIDInt(),
+		Amount:      invoiceRequest.GetAmountString(),
+		OrderID:     invoiceRequest.GetInvoiceIDString(),
 		Currency:    utils.StringRef(string(consts.CurrencyCodeUAH)),
 		OrderType:   utils.StringRef("settlement"),
-		Rectoken:    utils.StringRef(token),
-		OperationID: utils.StringRef(invoiceId.String()),
-		OrderDesc:   utils.StringRef(account.MerchantString),
+		Rectoken:    invoiceRequest.PaymentCardToken,
+		OperationID: invoiceRequest.GetInvoiceIDString(),
+		OrderDesc:   invoiceRequest.GetDescriptionString(),
 	}
 
-	raw, err := g.manager.SplitPayment(order, account)
+	raw, err := g.manager.SplitPayment(order, invoiceRequest.Merchant)
 	if err != nil {
 		return nil, models.NewAPIError(800, "Http splitRequest failed", err, nil, raw)
 	}
@@ -236,24 +230,31 @@ func (g *gateway) Split(account *models.MerchantAccount, invoiceId *uuid.UUID, t
 	return fondyResponse.Order()
 }
 
-func (g *gateway) Payment(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.Order, error) {
-	paymentAmount := *amount * 100
-
-	request := &models.RequestObject{
-		MerchantID: &account.MerchantID,
-		OrderDesc:  utils.StringRef(account.MerchantString),
-		Amount:     utils.StringRef(fmt.Sprintf("%.f", paymentAmount)),
-		OrderID:    utils.StringRef(invoiceId.String()),
+func (g *gateway) Payment(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
+	request := &models.FondyRequestObject{
+		MerchantID: invoiceRequest.GetMerchantIDString(),
+		Amount:     invoiceRequest.GetAmountString(),
+		OrderID:    invoiceRequest.GetInvoiceIDString(),
 		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
-		Rectoken:   utils.StringRef(token),
 		Preauth:    utils.StringRef("N"),
+		OrderDesc:  invoiceRequest.GetDescriptionString(),
 	}
 
-	raw, err := g.manager.StraightPayment(request, account)
-	if err != nil {
-		return nil, models.NewAPIError(800, "Http request failed while holding payment", err, request, raw)
-	}
+	var raw *[]byte
+	var err error
 
+	if invoiceRequest.IsMobile() {
+		request.RequiredRectoken = utils.StringRef("Y")
+		request.Container = invoiceRequest.Container
+		raw, err = g.manager.MobileStraightPayment(request, invoiceRequest.Merchant, invoiceRequest.ReservationData)
+	} else {
+		if invoiceRequest.PaymentCardToken == nil {
+			return nil, errors.New("token is required for web hold")
+		}
+
+		request.Rectoken = utils.StringRef(*invoiceRequest.PaymentCardToken)
+		raw, err = g.manager.StraightPayment(request, invoiceRequest.Merchant, invoiceRequest.ReservationData)
+	}
 	fondyResponse, err := models.UnmarshalStatusResponse(*raw)
 	if err != nil {
 		return nil, models.NewAPIError(801, "Unmarshal hold payment response fail", err, request, raw)
@@ -267,20 +268,31 @@ func (g *gateway) Payment(account *models.MerchantAccount, invoiceId *uuid.UUID,
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) Hold(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64, token string) (*models.Order, error) {
-	holdAmount := *amount * 100
-
-	request := &models.RequestObject{
-		MerchantID: &account.MerchantID,
-		Amount:     utils.StringRef(fmt.Sprintf("%.f", holdAmount)),
-		OrderID:    utils.StringRef(invoiceId.String()),
+func (g *gateway) Hold(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
+	request := &models.FondyRequestObject{
+		MerchantID: invoiceRequest.GetMerchantIDString(),
+		Amount:     invoiceRequest.GetAmountString(),
+		OrderID:    invoiceRequest.GetInvoiceIDString(),
 		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
-		Rectoken:   utils.StringRef(token),
 		Preauth:    utils.StringRef("Y"),
-		OrderDesc:  utils.StringRef(account.MerchantString),
+		OrderDesc:  invoiceRequest.GetDescriptionString(),
+	}
+	var raw *[]byte
+	var err error
+
+	if invoiceRequest.IsMobile() {
+		request.RequiredRectoken = utils.StringRef("Y")
+		request.Container = invoiceRequest.Container
+		raw, err = g.manager.MobileHoldPayment(request, invoiceRequest.Merchant, invoiceRequest.ReservationData)
+	} else {
+		if invoiceRequest.PaymentCardToken == nil {
+			return nil, errors.New("token is required for web hold")
+		}
+
+		request.Rectoken = utils.StringRef(*invoiceRequest.PaymentCardToken)
+		raw, err = g.manager.HoldPayment(request, invoiceRequest.Merchant, invoiceRequest.ReservationData)
 	}
 
-	raw, err := g.manager.HoldPayment(request, account)
 	if err != nil {
 		return nil, models.NewAPIError(800, "Http request failed while holding payment", err, request, raw)
 	}
@@ -298,17 +310,47 @@ func (g *gateway) Hold(account *models.MerchantAccount, invoiceId *uuid.UUID, am
 	return &fondyResponse.Response, nil
 }
 
-func (g *gateway) Capture(account *models.MerchantAccount, invoiceId *uuid.UUID, amount *float64) (*models.Order, error) {
-	captureAmount := *amount * 100
-
-	request := &models.RequestObject{
-		MerchantID: &account.MerchantID,
-		Amount:     utils.StringRef(fmt.Sprintf("%.f", captureAmount)),
-		OrderID:    utils.StringRef(invoiceId.String()),
+func (g *gateway) Capture(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
+	request := &models.FondyRequestObject{
+		MerchantID: invoiceRequest.GetMerchantIDString(),
+		Amount:     invoiceRequest.GetAmountString(),
+		OrderID:    invoiceRequest.GetInvoiceIDString(),
 		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
 	}
 
-	raw, err := g.manager.CapturePayment(request, account)
+	raw, err := g.manager.CapturePayment(request, invoiceRequest.Merchant, invoiceRequest.ReservationData)
+	if err != nil {
+		return nil, models.NewAPIError(800, "Http request failed while capturing payment", err, request, raw)
+	}
+
+	fondyResponse, err := models.UnmarshalStatusResponse(*raw)
+	if err != nil {
+		return nil, models.NewAPIError(801, "Unmarshal capture response fail", err, request, raw)
+	}
+
+	err = fondyResponse.Error()
+	if err != nil {
+		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
+	}
+
+	return &fondyResponse.Response, nil
+}
+
+func (g *gateway) Credit(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
+	captureAmount := invoiceRequest.Amount * 100
+	addData := make(map[string]string)
+	addData["acc"] = invoiceRequest.InvoiceID.String()
+
+	request := &models.FondyRequestObject{
+		MerchantID:       &invoiceRequest.Merchant.MerchantID,
+		Amount:           utils.StringRef(fmt.Sprintf("%.f", captureAmount)),
+		OrderID:          utils.StringRef(invoiceRequest.InvoiceID.String()),
+		Currency:         utils.StringRef(string(consts.CurrencyCodeUAH)),
+		ReceiverRectoken: invoiceRequest.WithdrawalCardToken,
+		AdditionalData:   addData,
+	}
+
+	raw, err := g.manager.Withdraw(request, invoiceRequest.Merchant, invoiceRequest.ReservationData)
 	if err != nil {
 		return nil, models.NewAPIError(800, "Http request failed while capturing payment", err, request, raw)
 	}

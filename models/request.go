@@ -34,16 +34,16 @@ import (
 	"github.com/stremovskyy/gofondy/utils"
 )
 
-type Request struct {
-	Request *RequestObject `json:"request"`
+type FondyRequest struct {
+	Request *FondyRequestObject `json:"request"`
 }
 
-func NewFondyRequest(request *RequestObject) *Request {
-	return &Request{Request: request}
+func NewFondyRequest(request *FondyRequestObject) *FondyRequest {
+	return &FondyRequest{Request: request}
 }
 
-// RequestObject Accept purchase (hosted payment page)
-type RequestObject struct {
+// FondyRequestObject Accept purchase (hosted payment page)
+type FondyRequestObject struct {
 	OrderID    *string `json:"order_id"`
 	MerchantID *string `json:"merchant_id"`
 	Signature  *string `json:"signature"`
@@ -64,11 +64,12 @@ type RequestObject struct {
 	MerchantData      *string `json:"merchant_data,omitempty"`
 	ReceiverRectoken  *string `json:"receiver_rectoken,omitempty"`
 	Container         *string `json:"container,omitempty"`
+	ReservationData   *string `json:"reservation_data,omitempty"`
 
 	AdditionalData map[string]string `json:"-"`
 }
 
-func (r *RequestObject) AdditionalDataString() string {
+func (r *FondyRequestObject) AdditionalDataString() string {
 	if r.AdditionalData == nil || len(r.AdditionalData) == 0 {
 		return ""
 	}
@@ -81,7 +82,7 @@ func (r *RequestObject) AdditionalDataString() string {
 }
 
 // Sign - adds signature for request using provided key
-func (r *RequestObject) Sign(key string) error {
+func (r *FondyRequestObject) Sign(key string, isDebug bool) error {
 	if r.Signature != nil {
 		r.Signature = nil
 	}
@@ -124,6 +125,11 @@ func (r *RequestObject) Sign(key string) error {
 	h := sha1.New()
 	h.Write([]byte(s))
 	r.Signature = utils.StringRef(fmt.Sprintf("%x", h.Sum(nil)))
+
+	if isDebug {
+		fmt.Println("[GO FONDY] Sign String: ", s)
+		fmt.Println("[GO FONDY] Signature: ", *r.Signature)
+	}
 
 	return nil
 }

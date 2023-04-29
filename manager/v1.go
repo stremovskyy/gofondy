@@ -29,7 +29,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -39,20 +38,35 @@ import (
 )
 
 type v1Client struct {
-	client *http.Client
+	client  *http.Client
+	options *ClientOptions
 }
 
-func (m *v1Client) do(url consts.FondyURL, request *models.RequestObject, credit bool, merchantAccount *models.MerchantAccount) (*[]byte, error) {
+func newV1Client(client *http.Client, options *ClientOptions) *v1Client {
+	return &v1Client{client: client, options: options}
+}
+
+func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, credit bool, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error) {
 	requestID := uuid.New().String()
 	methodPost := "POST"
 
+	if reservationData != nil {
+		request.ReservationData = reservationData.Base64Encoded()
+	}
+
+	if m.options.IsDebug {
+		log.Printf("[GO FONDY] Request ID: %v\n", requestID)
+		log.Printf("[GO FONDY] URL: %v\n", url.String())
+		log.Printf("[GO FONDY] Reservation data: %v\n", reservationData)
+	}
+
 	if credit {
-		err := request.Sign(merchantAccount.MerchantCreditKey)
+		err := request.Sign(merchantAccount.MerchantCreditKey, m.options.IsDebug)
 		if err != nil {
 			return nil, fmt.Errorf("cannot sign request with credit key: %v", err)
 		}
 	} else {
-		err := request.Sign(merchantAccount.MerchantKey)
+		err := request.Sign(merchantAccount.MerchantKey, m.options.IsDebug)
 		if err != nil {
 			return nil, fmt.Errorf("cannot sign request with merchant key: %v", err)
 		}
@@ -61,6 +75,10 @@ func (m *v1Client) do(url consts.FondyURL, request *models.RequestObject, credit
 	jsonValue, err := json.Marshal(models.NewFondyRequest(request))
 	if err != nil {
 		return nil, fmt.Errorf("cannot marshal request: %w", err)
+	}
+
+	if m.options.IsDebug {
+		log.Printf("[GO FONDY] Request: %v\n", string(jsonValue))
 	}
 
 	req, err := http.NewRequest(methodPost, url.String(), bytes.NewBuffer(jsonValue))
@@ -81,12 +99,12 @@ func (m *v1Client) do(url consts.FondyURL, request *models.RequestObject, credit
 		return nil, fmt.Errorf("cannot send request: %w", err)
 	}
 
-	raw, err := ioutil.ReadAll(resp.Body)
+	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read response: %w", err)
 	}
 
-	_, err = io.Copy(ioutil.Discard, resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("cannot copy response buffer: %w", err)
 	}
@@ -96,6 +114,10 @@ func (m *v1Client) do(url consts.FondyURL, request *models.RequestObject, credit
 			log.Printf("cannot close response body: %v", err)
 		}
 	}(resp.Body)
+
+	if m.options.IsDebug {
+		log.Printf("[GO FONDY] Response: %v\n", string(raw))
+	}
 
 	return &raw, nil
 }

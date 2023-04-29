@@ -48,7 +48,13 @@ func main() {
 
 	holdAmount := float64(3)
 
-	paymentByToken, err := fondyGateway.Hold(merchAccount, &invoiceId, &holdAmount, examples.CardToken)
+	invoiceRequest := &models.InvoiceRequest{
+		InvoiceID: invoiceId,
+		Merchant:  merchAccount,
+		Amount:    holdAmount,
+	}
+
+	paymentByToken, err := fondyGateway.Hold(invoiceRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
