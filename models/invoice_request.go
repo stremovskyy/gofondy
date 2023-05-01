@@ -24,6 +24,9 @@ type InvoiceRequest struct {
 	WithdrawalCardToken *string
 	ReservationData     *ReservationData
 	Container           *string
+	ServerCallbackURL   *string
+
+	AdditionalData map[string]string
 }
 
 func (i *InvoiceRequest) GetInvoiceIDString() *string {

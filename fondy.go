@@ -39,7 +39,6 @@ func New(options *models.Options) FondyGateway {
 func (g *gateway) VerificationLink(invoiceRequest *models.InvoiceRequest) (*url.URL, error) {
 	fondyVerificationAmount := g.options.VerificationAmount * 100
 	lf := strconv.FormatFloat(g.options.VerificationLifeTime.Seconds(), 'f', 2, 64)
-	cbu := g.options.CallbackBaseURL + g.options.CallbackUrl
 
 	request := &models.FondyRequestObject{
 		OrderID:           invoiceRequest.GetInvoiceIDString(),
@@ -52,7 +51,8 @@ func (g *gateway) VerificationLink(invoiceRequest *models.InvoiceRequest) (*url.
 		Lifetime:          utils.StringRef(lf),
 		RequiredRectoken:  utils.StringRef("Y"),
 		Currency:          utils.StringRef(string(consts.CurrencyCodeUAH)),
-		ServerCallbackURL: utils.StringRef(cbu),
+		AdditionalData:    invoiceRequest.AdditionalData,
+		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
 	}
 
 	raw, err := g.manager.Verify(request, invoiceRequest.Merchant)
@@ -79,8 +79,10 @@ func (g *gateway) VerificationLink(invoiceRequest *models.InvoiceRequest) (*url.
 
 func (g *gateway) Status(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
 	request := &models.FondyRequestObject{
-		MerchantID: invoiceRequest.GetMerchantIDString(),
-		OrderID:    invoiceRequest.GetInvoiceIDString(),
+		MerchantID:        invoiceRequest.GetMerchantIDString(),
+		OrderID:           invoiceRequest.GetInvoiceIDString(),
+		AdditionalData:    invoiceRequest.AdditionalData,
+		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
 	}
 
 	raw, err := g.manager.Status(request, invoiceRequest.Merchant)
@@ -103,10 +105,12 @@ func (g *gateway) Status(invoiceRequest *models.InvoiceRequest) (*models.Order, 
 
 func (g *gateway) Refund(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
 	request := &models.FondyRequestObject{
-		MerchantID: invoiceRequest.GetMerchantIDString(),
-		Amount:     invoiceRequest.GetAmountString(),
-		OrderID:    invoiceRequest.GetInvoiceIDString(),
-		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
+		MerchantID:        invoiceRequest.GetMerchantIDString(),
+		Amount:            invoiceRequest.GetAmountString(),
+		OrderID:           invoiceRequest.GetInvoiceIDString(),
+		Currency:          utils.StringRef(string(consts.CurrencyCodeUAH)),
+		AdditionalData:    invoiceRequest.AdditionalData,
+		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
 	}
 
 	raw, err := g.manager.RefundPayment(request, invoiceRequest.Merchant)
@@ -129,10 +133,11 @@ func (g *gateway) Refund(invoiceRequest *models.InvoiceRequest) (*models.Order, 
 
 func (g *gateway) SplitRefund(invoiceRequest *models.InvoiceRequest) (*models_v2.Order, error) {
 	request := &models_v2.Order{
-		MerchantID: invoiceRequest.Merchant.MerchantIDInt(),
-		Amount:     invoiceRequest.GetAmountString(),
-		OrderID:    invoiceRequest.GetInvoiceIDString(),
-		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
+		MerchantID:        invoiceRequest.Merchant.MerchantIDInt(),
+		Amount:            invoiceRequest.GetAmountString(),
+		OrderID:           invoiceRequest.GetInvoiceIDString(),
+		Currency:          utils.StringRef(string(consts.CurrencyCodeUAH)),
+		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
 	}
 
 	raw, err := g.manager.SplitRefund(request, invoiceRequest.Merchant)
@@ -187,14 +192,15 @@ func (g *gateway) Split(invoiceRequest *models.InvoiceRequest) (*models_v2.Order
 	}
 
 	order := &models_v2.Order{
-		MerchantID:  invoiceRequest.Merchant.MerchantIDInt(),
-		Amount:      invoiceRequest.GetAmountString(),
-		OrderID:     invoiceRequest.GetInvoiceIDString(),
-		Currency:    utils.StringRef(string(consts.CurrencyCodeUAH)),
-		OrderType:   utils.StringRef("settlement"),
-		Rectoken:    invoiceRequest.PaymentCardToken,
-		OperationID: invoiceRequest.GetInvoiceIDString(),
-		OrderDesc:   invoiceRequest.GetDescriptionString(),
+		MerchantID:        invoiceRequest.Merchant.MerchantIDInt(),
+		Amount:            invoiceRequest.GetAmountString(),
+		OrderID:           invoiceRequest.GetInvoiceIDString(),
+		Currency:          utils.StringRef(string(consts.CurrencyCodeUAH)),
+		OrderType:         utils.StringRef("settlement"),
+		Rectoken:          invoiceRequest.PaymentCardToken,
+		OperationID:       invoiceRequest.GetInvoiceIDString(),
+		OrderDesc:         invoiceRequest.GetDescriptionString(),
+		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
 	}
 
 	raw, err := g.manager.SplitPayment(order, invoiceRequest.Merchant)
@@ -217,12 +223,14 @@ func (g *gateway) Split(invoiceRequest *models.InvoiceRequest) (*models_v2.Order
 
 func (g *gateway) Payment(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
 	request := &models.FondyRequestObject{
-		MerchantID: invoiceRequest.GetMerchantIDString(),
-		Amount:     invoiceRequest.GetAmountString(),
-		OrderID:    invoiceRequest.GetInvoiceIDString(),
-		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
-		Preauth:    utils.StringRef("N"),
-		OrderDesc:  invoiceRequest.GetDescriptionString(),
+		MerchantID:        invoiceRequest.GetMerchantIDString(),
+		Amount:            invoiceRequest.GetAmountString(),
+		OrderID:           invoiceRequest.GetInvoiceIDString(),
+		Currency:          utils.StringRef(string(consts.CurrencyCodeUAH)),
+		Preauth:           utils.StringRef("N"),
+		OrderDesc:         invoiceRequest.GetDescriptionString(),
+		AdditionalData:    invoiceRequest.AdditionalData,
+		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
 	}
 
 	var raw *[]byte
@@ -255,13 +263,16 @@ func (g *gateway) Payment(invoiceRequest *models.InvoiceRequest) (*models.Order,
 
 func (g *gateway) Hold(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
 	request := &models.FondyRequestObject{
-		MerchantID: invoiceRequest.GetMerchantIDString(),
-		Amount:     invoiceRequest.GetAmountString(),
-		OrderID:    invoiceRequest.GetInvoiceIDString(),
-		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
-		Preauth:    utils.StringRef("Y"),
-		OrderDesc:  invoiceRequest.GetDescriptionString(),
+		MerchantID:        invoiceRequest.GetMerchantIDString(),
+		Amount:            invoiceRequest.GetAmountString(),
+		OrderID:           invoiceRequest.GetInvoiceIDString(),
+		Currency:          utils.StringRef(string(consts.CurrencyCodeUAH)),
+		Preauth:           utils.StringRef("Y"),
+		OrderDesc:         invoiceRequest.GetDescriptionString(),
+		AdditionalData:    invoiceRequest.AdditionalData,
+		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
 	}
+
 	var raw *[]byte
 	var err error
 
@@ -297,10 +308,12 @@ func (g *gateway) Hold(invoiceRequest *models.InvoiceRequest) (*models.Order, er
 
 func (g *gateway) Capture(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
 	request := &models.FondyRequestObject{
-		MerchantID: invoiceRequest.GetMerchantIDString(),
-		Amount:     invoiceRequest.GetAmountString(),
-		OrderID:    invoiceRequest.GetInvoiceIDString(),
-		Currency:   utils.StringRef(string(consts.CurrencyCodeUAH)),
+		MerchantID:        invoiceRequest.GetMerchantIDString(),
+		Amount:            invoiceRequest.GetAmountString(),
+		OrderID:           invoiceRequest.GetInvoiceIDString(),
+		Currency:          utils.StringRef(string(consts.CurrencyCodeUAH)),
+		AdditionalData:    invoiceRequest.AdditionalData,
+		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
 	}
 
 	raw, err := g.manager.CapturePayment(request, invoiceRequest.Merchant, invoiceRequest.ReservationData)
@@ -322,17 +335,14 @@ func (g *gateway) Capture(invoiceRequest *models.InvoiceRequest) (*models.Order,
 }
 
 func (g *gateway) Credit(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
-	captureAmount := invoiceRequest.Amount * 100
-	addData := make(map[string]string)
-	addData["acc"] = invoiceRequest.InvoiceID.String()
-
 	request := &models.FondyRequestObject{
-		MerchantID:       &invoiceRequest.Merchant.MerchantID,
-		Amount:           utils.StringRef(fmt.Sprintf("%.f", captureAmount)),
-		OrderID:          utils.StringRef(invoiceRequest.InvoiceID.String()),
-		Currency:         utils.StringRef(string(consts.CurrencyCodeUAH)),
-		ReceiverRectoken: invoiceRequest.WithdrawalCardToken,
-		AdditionalData:   addData,
+		MerchantID:        &invoiceRequest.Merchant.MerchantID,
+		Amount:            invoiceRequest.GetAmountString(),
+		OrderID:           invoiceRequest.GetInvoiceIDString(),
+		Currency:          utils.StringRef(string(consts.CurrencyCodeUAH)),
+		ReceiverRectoken:  invoiceRequest.WithdrawalCardToken,
+		AdditionalData:    invoiceRequest.AdditionalData,
+		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
 	}
 
 	raw, err := g.manager.Withdraw(request, invoiceRequest.Merchant, invoiceRequest.ReservationData)

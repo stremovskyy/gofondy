@@ -36,23 +36,17 @@ type Options struct {
 	VerificationAmount      int
 	VerificationDescription string
 	VerificationLifeTime    time.Duration
-
-	CallbackBaseURL string
-	CallbackUrl     string
-	IsDebug         bool
+	IsDebug                 bool
 }
 
 func DefaultOptions() *Options {
 	return &Options{
-		Timeout:                 time.Second * 10,
-		KeepAlive:               time.Second * 10,
-		MaxIdleConns:            10,
-		IdleConnTimeout:         time.Second * 10,
+		Timeout:                 time.Second * 30,
+		KeepAlive:               time.Second * 60,
+		MaxIdleConns:            30,
+		IdleConnTimeout:         time.Second * 60,
 		VerificationAmount:      1,
 		VerificationDescription: "Verification Test",
 		VerificationLifeTime:    600 * time.Second,
-
-		CallbackBaseURL: "http://localhost:8080",
-		CallbackUrl:     "/callback",
 	}
 }
