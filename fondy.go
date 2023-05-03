@@ -95,11 +95,6 @@ func (g *gateway) Status(invoiceRequest *models.InvoiceRequest) (*models.Order, 
 		return nil, models.NewAPIError(801, "Unmarshal response fail", err, request, raw)
 	}
 
-	err = fondyResponse.Error()
-	if err != nil {
-		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
-	}
-
 	return &fondyResponse.Response, nil
 }
 
