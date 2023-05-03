@@ -66,10 +66,10 @@ type Order struct {
 	ApprovalCode            *string                      `json:"approval_code"`
 	MerchantID              *int                         `json:"merchant_id"`
 	SettlementCurrency      *consts.CurrencyCode         `json:"settlement_currency"`
-	PaymentID               *int64                       `json:"payment_id"`
+	PaymentID               *int                         `json:"payment_id"`
 	ProductID               *string                      `json:"product_id"`
 	Currency                *consts.CurrencyCode         `json:"currency"`
-	CardBin                 interface{}                  `json:"card_bin"`
+	CardBin                 *int                         `json:"card_bin"`
 	ResponseCode            interface{}                  `json:"response_code"`
 	CardType                *consts.FondyCardType        `json:"card_type"`
 	Amount                  *string                      `json:"amount"`
@@ -77,7 +77,9 @@ type Order struct {
 	Signature               *string                      `json:"signature"`
 	ErrorCode               *int64                       `json:"error_code"`
 	FeeOplata               *string                      `json:"fee_oplata"`
-	AdditionalInfo          *string                      `json:"additional_info"`
+	AdditionalInfoString    *string                      `json:"additional_info"`
+	AdditionalInfo          *AdditionalInfo              `json:"additional_info_obj"`
+	RequestId               *string                      `json:"request_id"`
 
 	additional *AdditionalInfo
 }
@@ -89,7 +91,7 @@ func (o *Order) Additional() *AdditionalInfo {
 	}
 
 	if o.additional == nil {
-		additional, _ := UnmarshalAdditionalInfo([]byte(*o.AdditionalInfo))
+		additional, _ := UnmarshalAdditionalInfo([]byte(*o.AdditionalInfoString))
 		o.additional = &additional
 	}
 
@@ -264,15 +266,15 @@ func (o *Order) CapturedAmount() float64 {
 		return 0
 	}
 
-	info := o.Additional()
+	info := o.AdditionalInfo
 
 	if info.CaptureStatus != consts.FondyCaptureStatusCaptured {
 		return 0
 	}
 
-	if info.CaptureAmount == nil {
+	if info.CaptureAmount == 0 {
 		return 0
 	}
 
-	return *info.CaptureAmount
+	return info.CaptureAmount
 }

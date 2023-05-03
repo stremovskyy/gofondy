@@ -38,13 +38,13 @@ func UnmarshalAdditionalInfo(data []byte) (AdditionalInfo, error) {
 
 type AdditionalInfo struct {
 	CaptureStatus           consts.FondyCaptureStatus `json:"capture_status,omitempty"`
-	CaptureAmount           *float64                  `json:"capture_amount,omitempty"`
-	ReservationData         interface{}               `json:"reservation_data"`
-	TransactionID           *int64                    `json:"transaction_id,omitempty"`
+	CaptureAmount           float64                   `json:"capture_amount,omitempty"`
+	ReservationData         *string                   `json:"reservation_data"`
+	TransactionID           int                       `json:"transaction_id,omitempty"`
 	BankResponseCode        *string                   `json:"bank_response_code"`
 	BankResponseDescription *string                   `json:"bank_response_description"`
 	ClientFee               *int64                    `json:"client_fee,omitempty"`
-	SettlementFee           *float64                  `json:"settlement_fee,omitempty"`
+	SettlementFee           int64                     `json:"settlement_fee,omitempty"`
 	BankName                *string                   `json:"bank_name,omitempty"`
 	BankCountry             *string                   `json:"bank_country,omitempty"`
 	CardType                *string                   `json:"card_type,omitempty"`

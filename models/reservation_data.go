@@ -39,7 +39,7 @@ type ReservationData struct {
 	PurchasePaymentId *string `json:"purchase_payment_id,omitempty"`
 }
 
-func NewReservationDataForPaymentID(purchasePaymentId *int64) *ReservationData {
+func NewReservationDataForPaymentID(purchasePaymentId *int) *ReservationData {
 	if purchasePaymentId == nil {
 		return nil
 	}

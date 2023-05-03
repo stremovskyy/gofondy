@@ -34,6 +34,13 @@ import (
 func UnmarshalStatusResponse(data []byte) (StatusResponse, error) {
 	var r StatusResponse
 	err := json.Unmarshal(data, &r)
+
+	if r.Response.AdditionalInfoString != nil && *r.Response.AdditionalInfoString != "" {
+		ai := AdditionalInfo{}
+		_ = json.Unmarshal([]byte(*r.Response.AdditionalInfoString), &ai)
+		r.Response.AdditionalInfo = &ai
+	}
+
 	return r, err
 }
 

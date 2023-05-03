@@ -35,6 +35,13 @@ import (
 func UnmarshalFondyResponse(data []byte) (Response, error) {
 	var r Response
 	err := json.Unmarshal(data, &r)
+
+	if r.Response.OrderData.AdditionalInfoString != nil && *r.Response.OrderData.AdditionalInfoString != "" {
+		ai := AdditionalInfo{}
+		_ = json.Unmarshal([]byte(*r.Response.OrderData.AdditionalInfoString), &ai)
+		r.Response.OrderData.AdditionalInfo = &ai
+	}
+
 	return r, err
 }
 
