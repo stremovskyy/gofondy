@@ -303,12 +303,11 @@ func (g *gateway) Hold(invoiceRequest *models.InvoiceRequest) (*models.Order, er
 
 func (g *gateway) Capture(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
 	request := &models.FondyRequestObject{
-		MerchantID:        invoiceRequest.GetMerchantIDString(),
-		Amount:            invoiceRequest.GetAmountString(),
-		OrderID:           invoiceRequest.GetInvoiceIDString(),
-		Currency:          utils.StringRef(string(consts.CurrencyCodeUAH)),
-		AdditionalData:    invoiceRequest.AdditionalData,
-		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
+		MerchantID:     invoiceRequest.GetMerchantIDString(),
+		Amount:         invoiceRequest.GetAmountString(),
+		OrderID:        invoiceRequest.GetInvoiceIDString(),
+		Currency:       utils.StringRef(string(consts.CurrencyCodeUAH)),
+		AdditionalData: invoiceRequest.AdditionalData,
 	}
 
 	raw, err := g.manager.CapturePayment(request, invoiceRequest.Merchant, invoiceRequest.ReservationData)
