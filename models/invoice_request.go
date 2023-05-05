@@ -14,6 +14,7 @@ package models
 import (
 	"fmt"
 	"github.com/google/uuid"
+	"time"
 )
 
 type InvoiceRequest struct {
@@ -25,6 +26,7 @@ type InvoiceRequest struct {
 	ReservationData     *ReservationData
 	Container           *string
 	ServerCallbackURL   *string
+	PaymentLifetime     *time.Duration
 
 	AdditionalData map[string]string
 }

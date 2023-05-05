@@ -55,6 +55,11 @@ func (g *gateway) VerificationLink(invoiceRequest *models.InvoiceRequest) (*url.
 		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
 	}
 
+	if invoiceRequest.PaymentLifetime != nil {
+		sec := int64(invoiceRequest.PaymentLifetime.Seconds())
+		request.Lifetime = utils.StringRef(fmt.Sprintf("%d", sec))
+	}
+
 	raw, err := g.manager.Verify(request, invoiceRequest.Merchant)
 	if err != nil {
 		return nil, models.NewAPIError(800, "Http request failed", err, request, raw)
@@ -228,6 +233,11 @@ func (g *gateway) Payment(invoiceRequest *models.InvoiceRequest) (*models.Order,
 		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
 	}
 
+	if invoiceRequest.PaymentLifetime != nil {
+		sec := int64(invoiceRequest.PaymentLifetime.Seconds())
+		request.Lifetime = utils.StringRef(fmt.Sprintf("%d", sec))
+	}
+
 	var raw *[]byte
 	var err error
 
@@ -266,6 +276,11 @@ func (g *gateway) Hold(invoiceRequest *models.InvoiceRequest) (*models.Order, er
 		OrderDesc:         invoiceRequest.GetDescriptionString(),
 		AdditionalData:    invoiceRequest.AdditionalData,
 		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
+	}
+
+	if invoiceRequest.PaymentLifetime != nil {
+		sec := int64(invoiceRequest.PaymentLifetime.Seconds())
+		request.Lifetime = utils.StringRef(fmt.Sprintf("%d", sec))
 	}
 
 	var raw *[]byte
