@@ -155,7 +155,7 @@ func (o *Order) SignValid(merchantKey string) bool {
 }
 
 func (o *Order) Captured() bool {
-	if o == nil {
+	if o == nil || o.OrderStatus == nil {
 		return false
 	}
 
@@ -167,7 +167,7 @@ func (o *Order) Captured() bool {
 }
 
 func (o *Order) Reversed() bool {
-	if o == nil {
+	if o == nil || o.OrderStatus == nil {
 		return false
 	}
 
@@ -183,7 +183,7 @@ func (o *Order) Reversed() bool {
 }
 
 func (o *Order) Undefined() bool {
-	if o == nil && o.OrderStatus == nil {
+	if o == nil || o.OrderStatus == nil {
 		return false
 	}
 
@@ -195,11 +195,13 @@ func (o *Order) Undefined() bool {
 }
 
 func (o *Order) UncompletedHold() bool {
-	if o == nil && o.OrderStatus == nil {
+	if o == nil || o.OrderStatus == nil {
 		return false
 	}
 
-	if *o.OrderStatus == consts.StatusApproved && (o.ReversalAmount == nil || *o.ReversalAmount == "" || *o.ReversalAmount == "0") {
+	if o.OrderStatus != nil &&
+		*o.OrderStatus == consts.StatusApproved &&
+		(o.ReversalAmount == nil || *o.ReversalAmount == "" || *o.ReversalAmount == "0") {
 		return o.FeeOplata == nil || *o.FeeOplata == "0"
 	}
 
@@ -207,7 +209,7 @@ func (o *Order) UncompletedHold() bool {
 }
 
 func (o *Order) Declined() bool {
-	if o == nil && o.OrderStatus == nil {
+	if o == nil || o.OrderStatus == nil {
 		return false
 	}
 
@@ -215,7 +217,7 @@ func (o *Order) Declined() bool {
 }
 
 func (o *Order) Expired() bool {
-	if o == nil && o.OrderStatus == nil {
+	if o == nil || o.OrderStatus == nil {
 		return false
 	}
 
