@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/stremovskyy/gofondy/consts"
+	"github.com/stremovskyy/gofondy/fondy_status"
 	"strconv"
 )
 
@@ -74,18 +75,23 @@ func (r *StatusResponse) Error() error {
 					return nil
 				}
 
-				return NewFondyError(code, *r.Response.ResponseDescription)
+				intCode, err := strconv.Atoi(code)
+				if err != nil {
+					return nil
+				}
+
+				return NewFondyError(fondy_status.StatusCode(intCode), *r.Response.ResponseDescription)
 			}
 
 			if code, ok := r.Response.ResponseCode.(int64); ok {
-				return NewFondyError(strconv.FormatInt(code, 10), *r.Response.ResponseDescription)
+				return NewFondyError(fondy_status.StatusCode(code), *r.Response.ResponseDescription)
 			}
 
 			if code, ok := r.Response.ResponseCode.(float64); ok {
-				return NewFondyError(strconv.FormatFloat(code, 'f', -1, 64), *r.Response.ResponseDescription)
+				return NewFondyError(fondy_status.StatusCode(int(code)), *r.Response.ResponseDescription)
 			}
 
-			return NewFondyError("-1", *r.Response.ResponseDescription)
+			return NewFondyError(0, *r.Response.ResponseDescription)
 		}
 	}
 

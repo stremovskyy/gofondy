@@ -11,23 +11,29 @@
 
 package models
 
-import "strconv"
+import (
+	"github.com/stremovskyy/gofondy/fondy_status"
+	"strconv"
+)
 
 type FondyError struct {
-	ErrorCode    int64
+	ErrorCode    fondy_status.StatusCode
 	ErrorMessage string
 	IsFatal      bool
 }
 
 func NewFatalFondyError(errorCode int, errorMessage string) *FondyError {
-	return &FondyError{ErrorCode: int64(errorCode), ErrorMessage: errorMessage, IsFatal: true}
+	return &FondyError{ErrorCode: fondy_status.StatusCode(errorCode), ErrorMessage: errorMessage, IsFatal: true}
 }
 
-func NewFondyError(errorCode string, errorMessage string) *FondyError {
-	code, _ := strconv.ParseInt(errorCode, 10, 32)
-	return &FondyError{ErrorCode: code, ErrorMessage: errorMessage, IsFatal: false}
+func NewFondyError(statusCode fondy_status.StatusCode, errorMessage string) *FondyError {
+	return &FondyError{ErrorCode: statusCode, ErrorMessage: errorMessage, IsFatal: false}
 }
 
-func (e *FondyError) Error() string {
+func (e FondyError) Error() string {
 	return "[FONDY] " + e.ErrorMessage + " (" + strconv.Itoa(int(e.ErrorCode)) + ")"
+}
+
+func (e FondyError) CodeIs(code fondy_status.StatusCode) bool {
+	return e.ErrorCode == code
 }

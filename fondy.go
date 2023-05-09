@@ -366,7 +366,11 @@ func (g *gateway) Credit(invoiceRequest *models.InvoiceRequest) (*models.Order, 
 
 	err = fondyResponse.Error()
 	if err != nil {
-		return nil, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
+		if errors.As(err, &models.FondyError{}) {
+			errorCode := err.(*models.FondyError).ErrorCode
+			return &fondyResponse.Response, models.NewAPIError(int(errorCode), "Fondy Gate Response Failure", err, request, raw)
+		}
+		return &fondyResponse.Response, models.NewAPIError(802, "Fondy Gate Response Failure", err, request, raw)
 	}
 
 	return &fondyResponse.Response, nil

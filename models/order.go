@@ -27,6 +27,7 @@ package models
 import (
 	"crypto/sha1"
 	"fmt"
+	"github.com/stremovskyy/gofondy/fondy_status"
 	"reflect"
 	"sort"
 	"strconv"
@@ -81,6 +82,7 @@ type Order struct {
 	AdditionalInfo          *AdditionalInfo              `json:"additional_info_obj"`
 	RequestId               *string                      `json:"request_id"`
 
+	StatusCode *fondy_status.StatusCode `json:"-"`
 	additional *AdditionalInfo
 }
 
