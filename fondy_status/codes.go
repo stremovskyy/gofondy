@@ -252,6 +252,16 @@ func (s StatusCode) String() string {
 		return "Card exceeds withdrawal frequency limit The card has exceeded the limit on the number of transactions per day issuing bank"
 	case CardExceedsWithdrawalAmountLimit:
 		return "Card exceeds withdrawal amount limit The card has exceeded the limit on the amount of transactions per day issuing bank"
+	case AcquiringBankRequestTimeout:
+		return "Acquiring bank request timeout The acquiring bank did not respond in time acquiring bank"
+	case RestrictedCard:
+		return "Restricted card The card is blocked, the status was set, or it’s closed for online payments issuing bank"
+	case CardIsBlockedByAcquirerBank:
+		return "Card is blocked by acquirer bank The card is blocked, the status was set, or it’s closed for online payments issuing bank"
+	case ReceiverCardDeclinedByIssuer:
+		return "Receiver card declined by issuer Receiver card declined by issuer (is blocked) merchant"
+	case PINTriesExceeded:
+		return "PIN tries exceeded PIN tries exceeded merchant"
 	}
 
 	return fmt.Sprintf("Fondy StatusCode(%d)", s)
