@@ -64,13 +64,19 @@ func NewManager(options *models.Options) FondyManager {
 }
 
 func (m *manager) HoldPayment(request *models.FondyRequestObject, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error) {
+	request.Preauth = utils.StringRef("Y")
 	request.MerchantData = utils.StringRef("hold/" + merchantAccount.MerchantAddedDescription + request.AdditionalDataString())
+	request.OrderDesc = utils.StringRef(merchantAccount.MerchantString)
+	request.MerchantID = &merchantAccount.MerchantID
 
 	return m.client.payment(consts.FondyURLRecurring, request, merchantAccount, reservationData)
 }
 
 func (m *manager) StraightPayment(request *models.FondyRequestObject, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error) {
+	request.Preauth = utils.StringRef("N")
 	request.MerchantData = utils.StringRef("straight/" + merchantAccount.MerchantAddedDescription + request.AdditionalDataString())
+	request.OrderDesc = utils.StringRef(merchantAccount.MerchantString)
+	request.MerchantID = &merchantAccount.MerchantID
 
 	return m.client.payment(consts.FondyURLRecurring, request, merchantAccount, reservationData)
 }
