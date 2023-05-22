@@ -1,6 +1,6 @@
 /*
  * Project: banker
- * File: fondy_error.go (4/26/23, 1:18 PM)
+ * File: fondy_error.go (5/22/23, 12:22 PM)
  *
  * Copyright (C) Megakit Systems 2017-2023, Inc - All Rights Reserved
  * @link https://www.megakit.pro
@@ -36,4 +36,12 @@ func (e FondyError) Error() string {
 
 func (e FondyError) CodeIs(code fondy_status.StatusCode) bool {
 	return e.ErrorCode == code
+}
+
+func (e FondyError) IsFatalError() bool {
+	return e.IsFatal
+}
+
+func (e FondyError) Code() fondy_status.StatusCode {
+	return e.ErrorCode
 }
