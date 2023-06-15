@@ -52,6 +52,10 @@ func NewReservationDataForReceiverToken(receiverToken *string) *ReservationData 
 	return &ReservationData{ReceiverToken: receiverToken}
 }
 
+func NewReservationDataForReceiverTIN(receiverTIN *string) *ReservationData {
+	return &ReservationData{ReceiverInn: receiverTIN}
+}
+
 func (r *ReservationData) Base64Encoded() *string {
 	b, _ := utils.Base64StructEncode(r)
 	return &b
