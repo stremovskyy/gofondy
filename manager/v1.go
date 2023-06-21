@@ -45,7 +45,6 @@ type v1Client struct {
 func newV1Client(client *http.Client, options *ClientOptions) *v1Client {
 	return &v1Client{client: client, options: options}
 }
-
 func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, credit bool, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error) {
 	requestID := uuid.New().String()
 	methodPost := "POST"
@@ -60,16 +59,16 @@ func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, c
 		log.Printf("[GO FONDY] Reservation data: %v\n", reservationData)
 	}
 
+	var key string
 	if credit {
-		err := request.Sign(merchantAccount.MerchantCreditKey, m.options.IsDebug)
-		if err != nil {
-			return nil, fmt.Errorf("cannot sign request with credit key: %v", err)
-		}
+		key = merchantAccount.MerchantCreditKey
 	} else {
-		err := request.Sign(merchantAccount.MerchantKey, m.options.IsDebug)
-		if err != nil {
-			return nil, fmt.Errorf("cannot sign request with merchant key: %v", err)
-		}
+		key = merchantAccount.MerchantKey
+	}
+
+	err := request.Sign(key, m.options.IsDebug)
+	if err != nil {
+		return nil, fmt.Errorf("cannot sign request: %v", err)
 	}
 
 	jsonValue, err := json.Marshal(models.NewFondyRequest(request))
@@ -86,34 +85,28 @@ func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, c
 		return nil, fmt.Errorf("cannot create request: %w", err)
 	}
 
-	req.Header = http.Header{
-		"User-Agent":    {"GOFONDY/" + consts.Version},
-		"Accept":        {"application/json"},
-		"Content-Type":  {"application/json"},
-		"X-Request-ID":  {requestID},
-		"X-API-Version": {"1.0"},
-	}
+	req.Header.Set("User-Agent", "GOFONDY/"+consts.Version)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Request-ID", requestID)
+	req.Header.Set("X-API-Version", "1.0")
 
 	resp, err := m.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("cannot send request: %w", err)
 	}
 
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Printf("cannot close response body: %v", err)
+		}
+	}()
+
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read response: %w", err)
 	}
-
-	_, err = io.Copy(io.Discard, resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("cannot copy response buffer: %w", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Printf("cannot close response body: %v", err)
-		}
-	}(resp.Body)
 
 	if m.options.IsDebug {
 		log.Printf("[GO FONDY] Response: %v\n", string(raw))

@@ -43,7 +43,7 @@ type ClientOptions struct {
 
 func NewClient(options *ClientOptions) Client {
 	dialer := &net.Dialer{
-		Timeout:   options.Timeout,
+		Timeout:   30 * time.Second,
 		KeepAlive: options.KeepAlive,
 	}
 
@@ -53,9 +53,13 @@ func NewClient(options *ClientOptions) Client {
 		DisableCompression: true,
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			return dialer.DialContext(ctx, network, addr)
-		}}
+		},
+	}
 
-	cl := &http.Client{Transport: tr}
+	cl := &http.Client{
+		Transport: tr,
+		Timeout:   options.Timeout,
+	}
 
 	return &client{
 		v1: newV1Client(cl, options),
