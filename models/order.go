@@ -157,15 +157,11 @@ func (o *Order) SignValid(merchantKey string) bool {
 }
 
 func (o *Order) Captured() bool {
-	if o == nil || o.OrderStatus == nil {
+	if o == nil || o.OrderStatus == nil || o.AdditionalInfo == nil {
 		return false
 	}
 
-	if o.OrderStatus != nil && *o.OrderStatus == consts.StatusApproved && (o.ReversalAmount == nil || *o.ReversalAmount == "0") {
-		return o.FeeOplata != nil && *o.FeeOplata != "0"
-	}
-
-	return false
+	return o.AdditionalInfo.CaptureStatus == consts.FondyCaptureStatusCaptured
 }
 
 func (o *Order) Reversed() bool {
@@ -232,6 +228,19 @@ func (o *Order) RealAmount() float64 {
 	}
 
 	amount, err := strconv.ParseFloat(*o.Amount, 64)
+	if err != nil {
+		return 0
+	}
+
+	return amount / 100
+}
+
+func (o *Order) Actual() float64 {
+	if o == nil || o.ActualAmount == nil {
+		return 0
+	}
+
+	amount, err := strconv.ParseFloat(*o.ActualAmount, 64)
 	if err != nil {
 		return 0
 	}
