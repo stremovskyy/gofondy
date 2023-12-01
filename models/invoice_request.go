@@ -18,15 +18,16 @@ import (
 )
 
 type InvoiceRequest struct {
-	InvoiceID           uuid.UUID
-	Merchant            *MerchantAccount
-	Amount              float64
-	PaymentCardToken    *string
-	WithdrawalCardToken *string
-	ReservationData     *ReservationData
-	Container           *string
-	ServerCallbackURL   *string
-	PaymentLifetime     *time.Duration
+	InvoiceID            uuid.UUID
+	Merchant             *MerchantAccount
+	Amount               float64
+	PaymentCardToken     *string
+	WithdrawalCardToken  *string
+	WithdrawalCardNumber *string
+	ReservationData      *ReservationData
+	Container            *string
+	ServerCallbackURL    *string
+	PaymentLifetime      *time.Duration
 
 	AdditionalData map[string]string
 }

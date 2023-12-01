@@ -345,13 +345,14 @@ func (g *gateway) Capture(invoiceRequest *models.InvoiceRequest) (*models.Order,
 
 func (g *gateway) Credit(invoiceRequest *models.InvoiceRequest) (*models.Order, error) {
 	request := &models.FondyRequestObject{
-		MerchantID:        &invoiceRequest.Merchant.MerchantID,
-		Amount:            invoiceRequest.GetAmountString(),
-		OrderID:           invoiceRequest.GetInvoiceIDString(),
-		Currency:          utils.StringRef(string(consts.CurrencyCodeUAH)),
-		ReceiverRectoken:  invoiceRequest.WithdrawalCardToken,
-		AdditionalData:    invoiceRequest.AdditionalData,
-		ServerCallbackURL: invoiceRequest.ServerCallbackURL,
+		MerchantID:         &invoiceRequest.Merchant.MerchantID,
+		Amount:             invoiceRequest.GetAmountString(),
+		OrderID:            invoiceRequest.GetInvoiceIDString(),
+		Currency:           utils.StringRef(string(consts.CurrencyCodeUAH)),
+		ReceiverRectoken:   invoiceRequest.WithdrawalCardToken,
+		ReceiverCardNumber: invoiceRequest.WithdrawalCardNumber,
+		AdditionalData:     invoiceRequest.AdditionalData,
+		ServerCallbackURL:  invoiceRequest.ServerCallbackURL,
 	}
 
 	raw, err := g.manager.Withdraw(request, invoiceRequest.Merchant, invoiceRequest.ReservationData)

@@ -48,23 +48,24 @@ type FondyRequestObject struct {
 	MerchantID *string `json:"merchant_id"`
 	Signature  *string `json:"signature"`
 
-	OrderDesc         *string `json:"order_desc,omitempty"`
-	Amount            *string `json:"amount,omitempty"`
-	Currency          *string `json:"currency,omitempty"`
-	Preauth           *string `json:"preauth,omitempty"`
-	DesignID          *string `json:"design_id,omitempty"`
-	Rectoken          *string `json:"rectoken,omitempty"`
-	ProductID         *string `json:"product_id,omitempty"`
-	Lang              *string `json:"lang,omitempty"`
-	SenderEmail       *string `json:"sender_email,omitempty"`
-	ServerCallbackURL *string `json:"server_callback_url,omitempty"`
-	Lifetime          *string `json:"lifetime,omitempty"`
-	Verification      *string `json:"verification,omitempty"`
-	RequiredRectoken  *string `json:"required_rectoken,omitempty"`
-	MerchantData      *string `json:"merchant_data,omitempty"`
-	ReceiverRectoken  *string `json:"receiver_rectoken,omitempty"`
-	Container         *string `json:"container,omitempty"`
-	ReservationData   *string `json:"reservation_data,omitempty"`
+	OrderDesc          *string `json:"order_desc,omitempty"`
+	Amount             *string `json:"amount,omitempty"`
+	Currency           *string `json:"currency,omitempty"`
+	Preauth            *string `json:"preauth,omitempty"`
+	DesignID           *string `json:"design_id,omitempty"`
+	Rectoken           *string `json:"rectoken,omitempty"`
+	ProductID          *string `json:"product_id,omitempty"`
+	Lang               *string `json:"lang,omitempty"`
+	SenderEmail        *string `json:"sender_email,omitempty"`
+	ServerCallbackURL  *string `json:"server_callback_url,omitempty"`
+	Lifetime           *string `json:"lifetime,omitempty"`
+	Verification       *string `json:"verification,omitempty"`
+	RequiredRectoken   *string `json:"required_rectoken,omitempty"`
+	MerchantData       *string `json:"merchant_data,omitempty"`
+	ReceiverRectoken   *string `json:"receiver_rectoken,omitempty"`
+	ReceiverCardNumber *string `json:"receiver_card_number,omitempty"`
+	Container          *string `json:"container,omitempty"`
+	ReservationData    *string `json:"reservation_data,omitempty"`
 
 	AdditionalData map[string]string `json:"-"`
 }
