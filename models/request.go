@@ -118,7 +118,12 @@ func (r *FondyRequestObject) Sign(key string, isDebug bool) error {
 
 	final := make([]string, 0, len(preFiltered))
 	for _, k := range keys {
-		final = append(final, preFiltered[k])
+		value := preFiltered[k]
+
+		// Check if the value is not empty before adding it to the final slice
+		if value != "" {
+			final = append(final, value)
+		}
 	}
 
 	s += strings.Join(final, "|")
