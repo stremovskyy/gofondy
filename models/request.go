@@ -118,10 +118,7 @@ func (r *FondyRequestObject) Sign(key string, isDebug bool) error {
 
 	final := make([]string, 0, len(preFiltered))
 	for _, k := range keys {
-		value := preFiltered[k]
-
-		// Check if the value is not empty before adding it to the final slice
-		if value != "" {
+		if value, exists := preFiltered[k]; exists && value != "" {
 			final = append(final, value)
 		}
 	}
