@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2022 Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
+ * Copyright (c) 2024 Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,22 +22,26 @@
  * SOFTWARE.
  */
 
-package consts
+package models
 
-type FondyURL string
+type IDType int8
 
 const (
-	FondyURLGetVerification  FondyURL = "https://api.fondy.eu/api/checkout/url/"
-	FondyURLStatus           FondyURL = "https://api.fondy.eu/api/status/order_id/"
-	FondyURLRecurring        FondyURL = "https://api.fondy.eu/api/recurring/"
-	FondyURLP2PCredit        FondyURL = "https://api.fondy.eu/api/p2pcredit/"
-	FondyURLRefund           FondyURL = "https://api.fondy.eu/api/reverse/order_id/"
-	FondyURLCapture          FondyURL = "https://api.fondy.eu/api/capture/order_id/"
-	Fondy3DSecureS1          FondyURL = "https://pay.fondy.eu/api/3dsecure_step1/"
-	FondySettlement          FondyURL = "https://pay.fondy.eu/api/settlement"
-	FondyPartnerClientStatus FondyURL = "https://id.fondy.ua/partner-api/v1/client/status/"
+	IDTypeTIN IDType = iota
+	IDTypePassport
+	IDTypeIDCard
 )
 
-func (t FondyURL) String() string {
-	return string(t)
+type IDStatusRequest struct {
+	Merchant *MerchantAccount
+	ID       string
+	IDType   IDType
+}
+
+func (r *IDStatusRequest) IDref() *string {
+	return &r.ID
+}
+
+func (r *IDStatusRequest) GetMerchantID() *string {
+	return &r.Merchant.MerchantID
 }

@@ -30,7 +30,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stremovskyy/gofondy"
-	"github.com/stremovskyy/gofondy/consts"
 	"github.com/stremovskyy/gofondy/examples"
 	"github.com/stremovskyy/gofondy/models"
 )
@@ -39,14 +38,19 @@ func main() {
 	fondyGateway := gofondy.New(models.DefaultOptions())
 
 	merchAccount := &models.MerchantAccount{
-		MerchantID:       examples.TechMerchantId,
-		MerchantKey:      examples.TechMerchantKey,
-		MerchantString:   "Test Merchant",
-		MerchantDesignID: examples.DesignId,
-		IsTechnical:      true,
+		MerchantID:     examples.MerchantId,
+		MerchantKey:    examples.MerchantKey,
+		MerchantString: "Test Merchant",
 	}
 
-	verificationLink, err := fondyGateway.VerificationLink(merchAccount, uuid.New(), nil, "test", consts.CurrencyCodeUAH)
+	invoiceId := uuid.New()
+
+	verificationRequest := &models.InvoiceRequest{
+		InvoiceID: invoiceId,
+		Merchant:  merchAccount,
+	}
+
+	verificationLink, err := fondyGateway.V1().VerificationLink(verificationRequest)
 	if err != nil {
 		log.Fatal(err)
 	}

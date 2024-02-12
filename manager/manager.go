@@ -43,6 +43,7 @@ type FondyManager interface {
 	RefundPayment(request *models.FondyRequestObject, merchantAccount *models.MerchantAccount) (*[]byte, error)
 	SplitRefund(order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error)
 	SplitPayment(order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error)
+	IDStatus(fondyStatusRequest *models.FondyClientStatusRequest) (*[]byte, error)
 }
 
 type manager struct {
@@ -53,13 +54,15 @@ type manager struct {
 func NewManager(options *models.Options) FondyManager {
 	return &manager{
 		options: options,
-		client: NewClient(&ClientOptions{
-			Timeout:         options.Timeout,
-			KeepAlive:       options.KeepAlive,
-			MaxIdleConns:    options.MaxIdleConns,
-			IdleConnTimeout: options.IdleConnTimeout,
-			IsDebug:         options.IsDebug,
-		}),
+		client: NewClient(
+			&ClientOptions{
+				Timeout:         options.Timeout,
+				KeepAlive:       options.KeepAlive,
+				MaxIdleConns:    options.MaxIdleConns,
+				IdleConnTimeout: options.IdleConnTimeout,
+				IsDebug:         options.IsDebug,
+			},
+		),
 	}
 }
 
@@ -129,4 +132,8 @@ func (m *manager) SplitPayment(order *models_v2.Order, merchantAccount *models.M
 
 func (m *manager) SplitRefund(order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
 	return m.client.split(consts.FondyURLRefund, order, merchantAccount)
+}
+
+func (m *manager) IDStatus(fondyStatusRequest *models.FondyClientStatusRequest) (*[]byte, error) {
+	return m.client.clientStatus(consts.FondyPartnerClientStatus, fondyStatusRequest)
 }

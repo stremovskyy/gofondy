@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2022 Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
+ * Copyright (c) 2024 Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,38 +22,53 @@
  * SOFTWARE.
  */
 
-package main
+package models
 
 import (
 	"fmt"
-	"log"
-
-	"github.com/google/uuid"
-	"github.com/stremovskyy/gofondy"
-	"github.com/stremovskyy/gofondy/consts"
-	"github.com/stremovskyy/gofondy/examples"
-	"github.com/stremovskyy/gofondy/models"
+	"time"
 )
 
-func main() {
-	fondyGateway := gofondy.New(models.DefaultOptions())
+type FondyClientStatusResponse struct {
+	IsIdentified bool          `json:"is_identified"`
+	IPN          *string       `json:"ipn"`
+	Balance      *FondyBalance `json:"balance,omitempty"`
+	Error        *string       `json:"error,omitempty"`
+}
 
-	invoiceId := uuid.MustParse("e427696f-4c0e-4a47-8195-a3152dcf68f7")
+type FondyBalance struct {
+	CurrentLimit float64 `json:"current_limit"`
+	UsedLimit    float64 `json:"used_limit"`
+	CurrentDate  string  `json:"current_date"`
+}
 
-	merchAccount := &models.MerchantAccount{
-		MerchantID:     examples.MerchantId,
-		MerchantKey:    examples.MerchantKey,
-		MerchantString: "Test Merchant",
+func (r *FondyClientStatusResponse) IsError() bool {
+	return r.Error != nil
+}
+
+func (r *FondyClientStatusResponse) GetError() error {
+	if r.Error != nil {
+		return fmt.Errorf("api client fondy error: %s", *r.Error)
 	}
 
-	status, err := fondyGateway.V1().Status(merchAccount, &invoiceId)
+	return nil
+}
+
+func (r *FondyClientStatusResponse) IsInFondyDB() bool {
+	return r.IsIdentified && r.IPN != nil
+}
+
+func (r *FondyClientStatusResponse) LeftLimit() float64 {
+	return r.Balance.CurrentLimit - r.Balance.UsedLimit
+}
+
+func (r *FondyClientStatusResponse) LimitTill() *time.Time {
+	t, err := time.Parse("2006-01", r.Balance.CurrentDate)
 	if err != nil {
-		log.Fatal(err)
+		return nil
 	}
 
-	if *status.ResponseStatus == consts.FondyResponseStatusSuccess {
-		fmt.Printf("Order status: %s\n", *status.OrderStatus)
-	} else {
-		fmt.Printf("Error: %s\n", *status.ErrorMessage)
-	}
+	t = t.AddDate(0, 1, 0)
+
+	return &t
 }

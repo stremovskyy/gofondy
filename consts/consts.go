@@ -24,7 +24,7 @@
 
 package consts
 
-const Version = "0.1.18"
+const Version = "0.2.0"
 
 const (
 	FondyTimeFormat = "02.01.2006 15:04:05"

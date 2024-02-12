@@ -26,11 +26,13 @@ type Client interface {
 	payment(url consts.FondyURL, request *models.FondyRequestObject, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error)
 	split(url consts.FondyURL, order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error)
 	withdraw(url consts.FondyURL, request *models.FondyRequestObject, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error)
+	clientStatus(status consts.FondyURL, statusRequest *models.FondyClientStatusRequest) (*[]byte, error)
 }
 
 type client struct {
 	v1 *v1Client
 	v2 *v2Client
+	id *idClient
 }
 
 type ClientOptions struct {
@@ -66,6 +68,10 @@ func NewClient(options *ClientOptions) Client {
 		v2: &v2Client{
 			client: cl,
 		},
+		id: &idClient{
+			client:  cl,
+			options: options,
+		},
 	}
 }
 
@@ -79,4 +85,8 @@ func (m *client) withdraw(url consts.FondyURL, request *models.FondyRequestObjec
 
 func (m *client) split(url consts.FondyURL, order *models_v2.Order, merchantAccount *models.MerchantAccount) (*[]byte, error) {
 	return m.v2.do(url, order, false, merchantAccount, true)
+}
+
+func (m *client) clientStatus(status consts.FondyURL, statusRequest *models.FondyClientStatusRequest) (*[]byte, error) {
+	return m.id.clientStatus(status, statusRequest)
 }

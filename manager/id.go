@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2022 Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
+ * Copyright (c) 2024 Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,81 +37,68 @@ import (
 	"github.com/stremovskyy/gofondy/models"
 )
 
-type v1Client struct {
+type idClient struct {
 	client  *http.Client
 	options *ClientOptions
 }
 
-func newV1Client(client *http.Client, options *ClientOptions) *v1Client {
-	return &v1Client{client: client, options: options}
-}
-
-func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, credit bool, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error) {
+func (c *idClient) clientStatus(fondyURL consts.FondyURL, request *models.FondyClientStatusRequest) (*[]byte, error) {
+	// Generate a unique request ID
 	requestID := uuid.New().String()
 	methodPost := "POST"
 
-	if reservationData != nil {
-		request.ReservationData = reservationData.Base64Encoded()
-	}
-
-	if m.options.IsDebug {
+	// Debug logging
+	if c.options.IsDebug {
 		log.Printf("[GO FONDY] Request ID: %v\n", requestID)
-		log.Printf("[GO FONDY] URL: %v\n", url.String())
-		log.Printf("[GO FONDY] Reservation data: %v\n", reservationData)
+		log.Printf("[GO FONDY] URL: %v\n", fondyURL.String())
+		log.Printf("[GO FONDY] Client Status Request: %+v\n", request)
 	}
 
-	var key string
-	if credit {
-		key = merchantAccount.MerchantCreditKey
-	} else {
-		key = merchantAccount.MerchantKey
-	}
-
-	err := request.Sign(key, m.options.IsDebug)
-	if err != nil {
-		return nil, fmt.Errorf("cannot sign request: %v", err)
-	}
-
-	jsonValue, err := json.Marshal(models.NewFondyRequest(request))
+	// Serialize the request object to JSON
+	jsonValue, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("cannot marshal request: %w", err)
 	}
 
-	if m.options.IsDebug {
-		log.Printf("[GO FONDY] Request: %v\n", string(jsonValue))
+	// More debug logging
+	if c.options.IsDebug {
+		log.Printf("[GO FONDY] JSON Request: %v\n", string(jsonValue))
 	}
 
-	req, err := http.NewRequest(methodPost, url.String(), bytes.NewBuffer(jsonValue))
+	// Create a new HTTP request
+	req, err := http.NewRequest(methodPost, fondyURL.String(), bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create request: %w", err)
 	}
 
+	// Set the necessary headers here
 	req.Header.Set("User-Agent", "GOFONDY/"+consts.Version)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Request-ID", requestID)
 	req.Header.Set("X-API-Version", "1.0")
 
-	resp, err := m.client.Do(req)
+	// Send the request using the client's http.Client
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("cannot send request: %w", err)
 	}
-
 	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
+		if err := resp.Body.Close(); err != nil {
 			log.Printf("cannot close response body: %v", err)
 		}
 	}()
 
-	raw, err := io.ReadAll(resp.Body)
+	// Read the response body
+	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read response: %w", err)
 	}
 
-	if m.options.IsDebug {
-		log.Printf("[GO FONDY] Response: %v\n", string(raw))
+	// Debug logging for the response
+	if c.options.IsDebug {
+		log.Printf("[GO FONDY] Response: %v\n", string(responseBody))
 	}
 
-	return &raw, nil
+	return &responseBody, nil
 }

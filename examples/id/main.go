@@ -22,22 +22,37 @@
  * SOFTWARE.
  */
 
-package consts
+package main
 
-type FondyURL string
+import (
+	"fmt"
+	"log"
 
-const (
-	FondyURLGetVerification  FondyURL = "https://api.fondy.eu/api/checkout/url/"
-	FondyURLStatus           FondyURL = "https://api.fondy.eu/api/status/order_id/"
-	FondyURLRecurring        FondyURL = "https://api.fondy.eu/api/recurring/"
-	FondyURLP2PCredit        FondyURL = "https://api.fondy.eu/api/p2pcredit/"
-	FondyURLRefund           FondyURL = "https://api.fondy.eu/api/reverse/order_id/"
-	FondyURLCapture          FondyURL = "https://api.fondy.eu/api/capture/order_id/"
-	Fondy3DSecureS1          FondyURL = "https://pay.fondy.eu/api/3dsecure_step1/"
-	FondySettlement          FondyURL = "https://pay.fondy.eu/api/settlement"
-	FondyPartnerClientStatus FondyURL = "https://id.fondy.ua/partner-api/v1/client/status/"
+	"github.com/stremovskyy/gofondy"
+	"github.com/stremovskyy/gofondy/examples"
+	"github.com/stremovskyy/gofondy/models"
 )
 
-func (t FondyURL) String() string {
-	return string(t)
+func main() {
+	fondyGateway := gofondy.New(models.DebugDefaultOptions())
+
+	merchAccount := &models.MerchantAccount{
+		MerchantID:     examples.MerchantId,
+		MerchantKey:    examples.MerchantKey,
+		MerchantString: "Test Merchant",
+	}
+
+	verificationRequest := &models.IDStatusRequest{
+		Merchant: merchAccount,
+		ID:       "2562515514",
+		IDType:   models.IDTypeTIN,
+	}
+
+	statusResponse, err := fondyGateway.ID().Status(verificationRequest)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("\nstatusResponse: %s\n", statusResponse)
+	fmt.Printf("\nlimit: %s\n", statusResponse.LimitTill().String())
 }

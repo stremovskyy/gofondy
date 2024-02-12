@@ -19,6 +19,12 @@ import (
 )
 
 type FondyGateway interface {
+	V1() V1
+	V2() V2
+	ID() ID
+}
+
+type V1 interface {
 	VerificationLink(invoiceRequest *models.InvoiceRequest) (*url.URL, error)
 	Status(invoiceRequest *models.InvoiceRequest) (*models.Order, error)
 	Payment(invoiceRequest *models.InvoiceRequest) (*models.Order, error)
@@ -26,8 +32,14 @@ type FondyGateway interface {
 	Capture(invoiceRequest *models.InvoiceRequest) (*models.Order, error)
 	Refund(invoiceRequest *models.InvoiceRequest) (*models.Order, error)
 	Credit(invoiceRequest *models.InvoiceRequest) (*models.Order, error)
+}
 
-	// V2
+type V2 interface {
 	SplitRefund(invoiceRequest *models.InvoiceRequest) (*models_v2.Order, error)
 	Split(invoiceRequest *models.InvoiceRequest) (*models_v2.Order, error)
+}
+
+type ID interface {
+	Status(*models.IDStatusRequest) (*models.FondyClientStatusResponse, error)
+	Limits(*models.IDStatusRequest) (*models.FondyBalance, error)
 }

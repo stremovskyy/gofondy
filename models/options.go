@@ -50,3 +50,16 @@ func DefaultOptions() *Options {
 		VerificationLifeTime:    600 * time.Second,
 	}
 }
+
+func DebugDefaultOptions() *Options {
+	return &Options{
+		Timeout:                 time.Second * 30,
+		KeepAlive:               time.Second * 60,
+		MaxIdleConns:            30,
+		IdleConnTimeout:         time.Second * 60,
+		VerificationAmount:      1,
+		VerificationDescription: "Verification Test",
+		VerificationLifeTime:    600 * time.Second,
+		IsDebug:                 true,
+	}
+}
