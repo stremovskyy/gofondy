@@ -118,7 +118,9 @@ func (r *FondyRequestObject) Sign(key string, isDebug bool) error {
 
 	final := make([]string, 0, len(preFiltered))
 	for _, k := range keys {
-		final = append(final, preFiltered[k])
+		if value, exists := preFiltered[k]; exists && value != "" {
+			final = append(final, value)
+		}
 	}
 
 	s += strings.Join(final, "|")
