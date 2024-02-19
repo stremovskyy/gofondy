@@ -1,30 +1,18 @@
 /*
- * MIT License
+ * Project: banker
+ * File: fondy_client_status_response.go (2/19/24, 5:13 PM)
  *
- * Copyright (c) 2024 Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Copyright (C) Megakit Systems 2017-2024, Inc - All Rights Reserved
+ * @link https://www.megakit.pro
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * Written by Anton (antonstremovskyy) Stremovskyy <stremovskyy@gmail.com>
  */
 
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -71,4 +59,10 @@ func (r *FondyClientStatusResponse) LimitTill() *time.Time {
 	t = t.AddDate(0, 1, 0)
 
 	return &t
+}
+
+func (r *FondyClientStatusResponse) Bytes() []byte {
+	jsonString, _ := json.Marshal(r)
+
+	return jsonString
 }
