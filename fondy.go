@@ -14,6 +14,7 @@ package gofondy
 import (
 	"github.com/stremovskyy/gofondy/manager"
 	"github.com/stremovskyy/gofondy/models"
+	"github.com/stremovskyy/gofondy/recorder"
 )
 
 type gateway struct {
@@ -24,6 +25,13 @@ type gateway struct {
 func New(options *models.Options) FondyGateway {
 	return &gateway{
 		manager: manager.NewManager(options),
+		options: options,
+	}
+}
+
+func NewWithRecorder(options *models.Options, recorder recorder.Client) FondyGateway {
+	return &gateway{
+		manager: manager.NewManagerWithRecorder(options, recorder),
 		options: options,
 	}
 }

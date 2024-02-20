@@ -26,6 +26,7 @@ package manager
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,17 +34,18 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+
+	"github.com/stremovskyy/gofondy/recorder"
+
 	"github.com/stremovskyy/gofondy/consts"
 	"github.com/stremovskyy/gofondy/models"
 )
 
 type v1Client struct {
-	client  *http.Client
-	options *ClientOptions
-}
-
-func newV1Client(client *http.Client, options *ClientOptions) *v1Client {
-	return &v1Client{client: client, options: options}
+	client   *http.Client
+	options  *ClientOptions
+	logger   *log.Logger
+	recorder recorder.Client
 }
 
 func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, credit bool, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error) {
@@ -55,9 +57,9 @@ func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, c
 	}
 
 	if m.options.IsDebug {
-		log.Printf("[GO FONDY] Request ID: %v\n", requestID)
-		log.Printf("[GO FONDY] URL: %v\n", url.String())
-		log.Printf("[GO FONDY] Reservation data: %v\n", reservationData)
+		m.logger.Printf("[GO FONDY] Request ID: %v\n", requestID)
+		m.logger.Printf("[GO FONDY] URL: %v\n", url.String())
+		m.logger.Printf("[GO FONDY] Reservation data: %v\n", reservationData)
 	}
 
 	var key string
@@ -78,7 +80,17 @@ func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, c
 	}
 
 	if m.options.IsDebug {
-		log.Printf("[GO FONDY] Request: %v\n", string(jsonValue))
+		m.logger.Printf("[GO FONDY] Request: %v\n", string(jsonValue))
+	}
+
+	tags := tagsRequestRetriever(request)
+	ctx := context.WithValue(context.Background(), "request_id", requestID)
+
+	if m.recorder != nil {
+		err = m.recorder.RecordRequest(ctx, request.OrderID, requestID, jsonValue, tags)
+		if err != nil {
+			m.logger.Printf("[ERROR] cannot record request: %v", err)
+		}
 	}
 
 	req, err := http.NewRequest(methodPost, url.String(), bytes.NewBuffer(jsonValue))
@@ -94,6 +106,13 @@ func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, c
 
 	resp, err := m.client.Do(req)
 	if err != nil {
+		if m.recorder != nil {
+			err = m.recorder.RecordError(ctx, request.OrderID, requestID, err, tags)
+			if err != nil {
+				m.logger.Printf("[ERROR] cannot record request error: %v", err)
+			}
+		}
+
 		return nil, fmt.Errorf("cannot send request: %w", err)
 	}
 
@@ -109,9 +128,26 @@ func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, c
 		return nil, fmt.Errorf("cannot read response: %w", err)
 	}
 
+	if m.recorder != nil {
+		err = m.recorder.RecordResponse(ctx, request.OrderID, requestID, raw, tags)
+		if err != nil {
+			m.logger.Printf("[ERROR] cannot record response: %v", err)
+		}
+	}
+
 	if m.options.IsDebug {
 		log.Printf("[GO FONDY] Response: %v\n", string(raw))
 	}
 
 	return &raw, nil
+}
+
+func tagsRequestRetriever(request *models.FondyRequestObject) map[string]string {
+	tags := make(map[string]string)
+
+	if request.OrderID != nil {
+		tags["order_id"] = *request.OrderID
+	}
+
+	return tags
 }

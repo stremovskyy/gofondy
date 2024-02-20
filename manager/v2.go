@@ -27,16 +27,19 @@ package manager
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/google/uuid"
+
+	"github.com/stremovskyy/gofondy/recorder"
+
 	"github.com/stremovskyy/gofondy/consts"
 	"github.com/stremovskyy/gofondy/models"
 	"github.com/stremovskyy/gofondy/models/models_v2"
@@ -44,7 +47,9 @@ import (
 )
 
 type v2Client struct {
-	client *http.Client
+	client   *http.Client
+	logger   *log.Logger
+	recorder recorder.Client
 }
 
 func (m *v2Client) do(url consts.FondyURL, order *models_v2.Order, credit bool, merchantAccount *models.MerchantAccount, addOrderDescription bool) (*[]byte, error) {
@@ -86,6 +91,16 @@ func (m *v2Client) do(url consts.FondyURL, order *models_v2.Order, credit bool, 
 		return nil, fmt.Errorf("cannot marshal request: %w", err)
 	}
 
+	ctx := context.WithValue(context.Background(), "request_id", requestID)
+	tags := tagsOrderRetriever(order)
+
+	if m.recorder != nil {
+		err = m.recorder.RecordRequest(ctx, nil, requestID, jsonValue, tags)
+		if err != nil {
+			m.logger.Printf("[ERROR] cannot record request: %v", err)
+		}
+	}
+
 	req, err := http.NewRequest(methodPost, url.String(), bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create request: %w", err)
@@ -120,13 +135,20 @@ func (m *v2Client) do(url consts.FondyURL, order *models_v2.Order, credit bool, 
 		reader = resp.Body
 	}
 
-	raw, err := ioutil.ReadAll(reader)
+	raw, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read response: %w", err)
 	}
 
-	_, err = io.Copy(ioutil.Discard, reader)
+	_, err = io.Copy(io.Discard, reader)
 	if err != nil {
+		if m.recorder != nil {
+			err = m.recorder.RecordError(ctx, nil, requestID, err, tags)
+			if err != nil {
+				m.logger.Printf("[ERROR] cannot record request error: %v", err)
+			}
+		}
+
 		return nil, fmt.Errorf("cannot copy response buffer: %w", err)
 	}
 	defer func(Body io.ReadCloser) {
@@ -136,10 +158,27 @@ func (m *v2Client) do(url consts.FondyURL, order *models_v2.Order, credit bool, 
 		}
 	}(resp.Body)
 
+	if m.recorder != nil {
+		err = m.recorder.RecordResponse(ctx, nil, requestID, raw, tags)
+		if err != nil {
+			m.logger.Printf("[ERROR] cannot record response: %v", err)
+		}
+	}
+
 	errorResponse, _ := models_v2.UnmarshalErrorResponse(raw)
 	if errorResponse.Response.ErrorCode != 0 {
 		return nil, fmt.Errorf("fondy error response (%d): %s", errorResponse.Response.ErrorCode, errorResponse.Response.ErrorMessage)
 	}
 
 	return &raw, nil
+}
+
+func tagsOrderRetriever(order *models_v2.Order) map[string]string {
+	tags := make(map[string]string)
+
+	if order.OrderID != nil {
+		tags["order_id"] = *order.OrderID
+	}
+
+	return tags
 }

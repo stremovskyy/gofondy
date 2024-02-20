@@ -26,6 +26,7 @@ package manager
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,13 +34,18 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+
+	"github.com/stremovskyy/gofondy/recorder"
+
 	"github.com/stremovskyy/gofondy/consts"
 	"github.com/stremovskyy/gofondy/models"
 )
 
 type idClient struct {
-	client  *http.Client
-	options *ClientOptions
+	client   *http.Client
+	options  *ClientOptions
+	logger   *log.Logger
+	recorder recorder.Client
 }
 
 func (c *idClient) clientStatus(fondyURL consts.FondyURL, request *models.FondyClientStatusRequest) (*[]byte, error) {
@@ -49,9 +55,9 @@ func (c *idClient) clientStatus(fondyURL consts.FondyURL, request *models.FondyC
 
 	// Debug logging
 	if c.options.IsDebug {
-		log.Printf("[GO FONDY] Request ID: %v\n", requestID)
-		log.Printf("[GO FONDY] URL: %v\n", fondyURL.String())
-		log.Printf("[GO FONDY] Client Status Request: %+v\n", request)
+		c.logger.Printf("[GO FONDY] Request ID: %v\n", requestID)
+		c.logger.Printf("[GO FONDY] URL: %v\n", fondyURL.String())
+		c.logger.Printf("[GO FONDY] Client Status Request: %+v\n", request)
 	}
 
 	// Serialize the request object to JSON
@@ -60,9 +66,19 @@ func (c *idClient) clientStatus(fondyURL consts.FondyURL, request *models.FondyC
 		return nil, fmt.Errorf("cannot marshal request: %w", err)
 	}
 
-	// More debug logging
 	if c.options.IsDebug {
-		log.Printf("[GO FONDY] JSON Request: %v\n", string(jsonValue))
+		c.logger.Printf("[GO FONDY] Request: %v\n", string(jsonValue))
+	}
+
+	ctx := context.WithValue(context.Background(), "request_id", requestID)
+
+	tags := tagsRetriever(request)
+
+	if c.recorder != nil {
+		err = c.recorder.RecordRequest(ctx, nil, requestID, jsonValue, tags)
+		if err != nil {
+			c.logger.Printf("[ERROR] cannot record request: %v", err)
+		}
 	}
 
 	// Create a new HTTP request
@@ -81,6 +97,13 @@ func (c *idClient) clientStatus(fondyURL consts.FondyURL, request *models.FondyC
 	// Send the request using the client's http.Client
 	resp, err := c.client.Do(req)
 	if err != nil {
+		if c.recorder != nil {
+			err = c.recorder.RecordError(ctx, nil, requestID, err, tags)
+			if err != nil {
+				c.logger.Printf("[ERROR] cannot record request error: %v", err)
+			}
+		}
+
 		return nil, fmt.Errorf("cannot send request: %w", err)
 	}
 	defer func() {
@@ -95,10 +118,39 @@ func (c *idClient) clientStatus(fondyURL consts.FondyURL, request *models.FondyC
 		return nil, fmt.Errorf("cannot read response: %w", err)
 	}
 
+	if c.recorder != nil {
+		err = c.recorder.RecordResponse(ctx, nil, requestID, responseBody, tags)
+		if err != nil {
+			c.logger.Printf("[ERROR] cannot record response: %v", err)
+		}
+	}
+
 	// Debug logging for the response
 	if c.options.IsDebug {
-		log.Printf("[GO FONDY] Response: %v\n", string(responseBody))
+		c.logger.Printf("[GO FONDY] Response: %v\n", string(responseBody))
 	}
 
 	return &responseBody, nil
+}
+
+func tagsRetriever(request *models.FondyClientStatusRequest) map[string]string {
+	tags := make(map[string]string)
+
+	if request.MerchantID != nil {
+		tags["merchant:id"] = *request.MerchantID
+	}
+
+	if request.IPN != nil {
+		tags["id:ipn"] = *request.IPN
+	}
+
+	if request.IDCard != nil {
+		tags["id:card"] = *request.IDCard
+	}
+
+	if request.InternalPassport != nil {
+		tags["id:internal_passport"] = *request.InternalPassport
+	}
+
+	return tags
 }

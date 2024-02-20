@@ -28,6 +28,7 @@ import (
 	"github.com/stremovskyy/gofondy/consts"
 	"github.com/stremovskyy/gofondy/models"
 	"github.com/stremovskyy/gofondy/models/models_v2"
+	"github.com/stremovskyy/gofondy/recorder"
 	"github.com/stremovskyy/gofondy/utils"
 )
 
@@ -62,6 +63,22 @@ func NewManager(options *models.Options) FondyManager {
 				IdleConnTimeout: options.IdleConnTimeout,
 				IsDebug:         options.IsDebug,
 			},
+		),
+	}
+}
+
+func NewManagerWithRecorder(options *models.Options, recorder recorder.Client) FondyManager {
+	return &manager{
+		options: options,
+		client: NewClientWithRecorder(
+			&ClientOptions{
+				Timeout:         options.Timeout,
+				KeepAlive:       options.KeepAlive,
+				MaxIdleConns:    options.MaxIdleConns,
+				IdleConnTimeout: options.IdleConnTimeout,
+				IsDebug:         options.IsDebug,
+			},
+			recorder,
 		),
 	}
 }

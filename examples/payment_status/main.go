@@ -33,12 +33,21 @@ import (
 	"github.com/stremovskyy/gofondy/consts"
 	"github.com/stremovskyy/gofondy/examples"
 	"github.com/stremovskyy/gofondy/models"
+	"github.com/stremovskyy/gofondy/recorder/redis_recorder"
 )
 
 func main() {
-	fondyGateway := gofondy.New(models.DefaultOptions())
+	responseRecorder := redis_recorder.NewRedisRecorder(
+		redis_recorder.NewDefaultOptions(
+			"localhost:6379",
+			"",
+			12,
+		),
+	)
 
-	invoiceId := uuid.MustParse("e427696f-4c0e-4a47-8195-a3152dcf68f7")
+	fondyGateway := gofondy.NewWithRecorder(models.DefaultOptions(), responseRecorder)
+
+	invoiceId := uuid.MustParse("487ddbaa-a321-48d5-a654-afb2e7f3d275")
 
 	merchAccount := &models.MerchantAccount{
 		MerchantID:     examples.MerchantId,
@@ -46,7 +55,12 @@ func main() {
 		MerchantString: "Test Merchant",
 	}
 
-	status, err := fondyGateway.V1().Status(merchAccount, &invoiceId)
+	invoiceRequest := &models.InvoiceRequest{
+		Merchant:  merchAccount,
+		InvoiceID: invoiceId,
+	}
+
+	status, err := fondyGateway.V1().Status(invoiceRequest)
 	if err != nil {
 		log.Fatal(err)
 	}

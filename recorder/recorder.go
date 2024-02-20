@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2022 Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
+ * Copyright (c) 2024 Anton (stremovskyy) Stremovskyy <stremovskyy@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,46 +22,15 @@
  * SOFTWARE.
  */
 
-package main
+package recorder
 
-import (
-	"fmt"
-	"log"
+import "context"
 
-	"github.com/stremovskyy/gofondy"
-	"github.com/stremovskyy/gofondy/examples"
-	"github.com/stremovskyy/gofondy/models"
-	"github.com/stremovskyy/gofondy/recorder/redis_recorder"
-)
-
-func main() {
-	responseRecorder := redis_recorder.NewRedisRecorder(
-		redis_recorder.NewDefaultOptions(
-			"localhost:6379",
-			"",
-			12,
-		),
-	)
-
-	fondyGateway := gofondy.NewWithRecorder(models.DebugDefaultOptions(), responseRecorder)
-
-	merchAccount := &models.MerchantAccount{
-		MerchantID:     examples.MerchantId,
-		MerchantKey:    examples.MerchantKey,
-		MerchantString: "Test Merchant",
-	}
-
-	verificationRequest := &models.IDStatusRequest{
-		Merchant: merchAccount,
-		ID:       "2562515514",
-		IDType:   models.IDTypeTIN,
-	}
-
-	statusResponse, err := fondyGateway.ID().Status(verificationRequest)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("\nstatusResponse: %s\n", statusResponse)
-	fmt.Printf("\nlimit: %s\n", statusResponse.LimitTill().String())
+type Client interface {
+	RecordRequest(ctx context.Context, orderID *string, requestID string, request []byte, tags map[string]string) error
+	RecordResponse(ctx context.Context, orderID *string, requestID string, response []byte, tags map[string]string) error
+	RecordError(ctx context.Context, orderID *string, requestID string, err error, tags map[string]string) error
+	GetRequest(ctx context.Context, requestID string) ([]byte, error)
+	GetResponse(ctx context.Context, requestID string) ([]byte, error)
+	FindByTag(ctx context.Context, tag string) ([]string, error)
 }

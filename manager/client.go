@@ -13,6 +13,7 @@ package manager
 
 import (
 	"context"
+	"log"
 	"net"
 	"net/http"
 	"time"
@@ -20,6 +21,7 @@ import (
 	"github.com/stremovskyy/gofondy/consts"
 	"github.com/stremovskyy/gofondy/models"
 	"github.com/stremovskyy/gofondy/models/models_v2"
+	"github.com/stremovskyy/gofondy/recorder"
 )
 
 type Client interface {
@@ -64,13 +66,60 @@ func NewClient(options *ClientOptions) Client {
 	}
 
 	return &client{
-		v1: newV1Client(cl, options),
+		v1: &v1Client{
+			client:  cl,
+			options: options,
+			logger:  log.New(log.Writer(), "Fondy v1: ", log.LstdFlags),
+		},
 		v2: &v2Client{
 			client: cl,
+			logger: log.New(log.Writer(), "Fondy v2: ", log.LstdFlags),
 		},
 		id: &idClient{
 			client:  cl,
 			options: options,
+			logger:  log.New(log.Writer(), "Fondy ID: ", log.LstdFlags),
+		},
+	}
+}
+
+func NewClientWithRecorder(options *ClientOptions, recorder recorder.Client) Client {
+	dialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: options.KeepAlive,
+	}
+
+	tr := &http.Transport{
+		MaxIdleConns:       options.MaxIdleConns,
+		IdleConnTimeout:    options.IdleConnTimeout,
+		DisableCompression: true,
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.DialContext(ctx, network, addr)
+		},
+	}
+
+	cl := &http.Client{
+		Transport: tr,
+		Timeout:   options.Timeout,
+	}
+
+	return &client{
+		v1: &v1Client{
+			client:   cl,
+			options:  options,
+			logger:   log.New(log.Writer(), "Fondy v1: ", log.LstdFlags),
+			recorder: recorder,
+		},
+		v2: &v2Client{
+			client:   cl,
+			logger:   log.New(log.Writer(), "Fondy v2: ", log.LstdFlags),
+			recorder: recorder,
+		},
+		id: &idClient{
+			client:   cl,
+			options:  options,
+			logger:   log.New(log.Writer(), "Fondy ID: ", log.LstdFlags),
+			recorder: recorder,
 		},
 	}
 }
