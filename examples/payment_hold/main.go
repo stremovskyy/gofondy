@@ -29,6 +29,7 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+
 	"github.com/stremovskyy/gofondy"
 	"github.com/stremovskyy/gofondy/consts"
 	"github.com/stremovskyy/gofondy/examples"
@@ -54,7 +55,7 @@ func main() {
 		Amount:    holdAmount,
 	}
 
-	paymentByToken, err := fondyGateway.Hold(invoiceRequest)
+	paymentByToken, err := fondyGateway.V1().Hold(invoiceRequest)
 	if err != nil {
 		log.Fatal(err)
 	}

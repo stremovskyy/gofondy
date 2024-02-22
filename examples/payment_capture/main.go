@@ -29,6 +29,7 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+
 	"github.com/stremovskyy/gofondy"
 	"github.com/stremovskyy/gofondy/consts"
 	"github.com/stremovskyy/gofondy/examples"
@@ -48,7 +49,13 @@ func main() {
 
 	captureAmount := float64(3)
 
-	capturePayment, err := fondyGateway.Capture(merchAccount, &invoiceId, &captureAmount)
+	CaptureRequest := &models.InvoiceRequest{
+		InvoiceID: invoiceId,
+		Merchant:  merchAccount,
+		Amount:    captureAmount,
+	}
+
+	capturePayment, err := fondyGateway.V1().Capture(CaptureRequest)
 	if err != nil {
 		log.Fatal(err)
 	}

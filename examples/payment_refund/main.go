@@ -29,6 +29,7 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+
 	"github.com/stremovskyy/gofondy"
 	"github.com/stremovskyy/gofondy/consts"
 	"github.com/stremovskyy/gofondy/examples"
@@ -46,7 +47,11 @@ func main() {
 
 	invoiceId := uuid.MustParse("a534be84-c5d5-46d3-b858-36a46bbb0dea")
 
-	status, err := fondyGateway.Status(merchAccount, &invoiceId)
+	statusRequest := &models.InvoiceRequest{
+		InvoiceID: invoiceId,
+	}
+
+	status, err := fondyGateway.V1().Status(statusRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,7 +64,13 @@ func main() {
 
 	captureAmount := status.CapturedAmount()
 
-	refundPayment, err := fondyGateway.Refund(merchAccount, &invoiceId, &captureAmount)
+	captureRequest := &models.InvoiceRequest{
+		InvoiceID: invoiceId,
+		Merchant:  merchAccount,
+		Amount:    captureAmount,
+	}
+
+	refundPayment, err := fondyGateway.V1().Refund(captureRequest)
 	if err != nil {
 		log.Fatal(err)
 	}

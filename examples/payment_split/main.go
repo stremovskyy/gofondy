@@ -29,6 +29,7 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+
 	"github.com/stremovskyy/gofondy"
 	"github.com/stremovskyy/gofondy/examples"
 	"github.com/stremovskyy/gofondy/models"
@@ -69,7 +70,7 @@ func main() {
 
 	invoiceId := uuid.MustParse("767f44ef-2997-4623-961f-9ee081ef730f")
 
-	intermediateResponse, err := fondyGateway.Split(techAccount, &invoiceId, examples.CardToken)
+	intermediateResponse, err := fondyGateway.V2().Split(techAccount, &invoiceId, examples.CardToken)
 	if err != nil {
 		log.Fatal(err)
 	}
