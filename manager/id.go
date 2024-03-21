@@ -32,6 +32,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -52,6 +53,24 @@ func (c *idClient) clientStatus(fondyURL consts.FondyURL, request *models.FondyC
 	// Generate a unique request ID
 	requestID := uuid.New().String()
 	methodPost := "POST"
+	ctx := context.WithValue(context.Background(), "request_id", requestID)
+	tags := tagsRetriever(request)
+
+	metricsMap := make(map[string]string)
+	metricsMap["url"] = fondyURL.String()
+	tim := time.Now()
+	metricsMap["start_timestamp"] = tim.Format("2006-01-02 15:04:05")
+	defer func() {
+		metricsMap["end_timestamp"] = tim.Format("2006-01-02 15:04:05")
+		metricsMap["duration"] = fmt.Sprintf("%s", time.Since(tim).String())
+
+		if c.recorder != nil {
+			err := c.recorder.RecordMetrics(ctx, nil, requestID, metricsMap, tags)
+			if err != nil {
+				c.logger.Printf("[ERROR] cannot record metrics: %v", err)
+			}
+		}
+	}()
 
 	// Debug logging
 	if c.options.IsDebug {
@@ -69,10 +88,6 @@ func (c *idClient) clientStatus(fondyURL consts.FondyURL, request *models.FondyC
 	if c.options.IsDebug {
 		c.logger.Printf("[GO FONDY] Request: %v\n", string(jsonValue))
 	}
-
-	ctx := context.WithValue(context.Background(), "request_id", requestID)
-
-	tags := tagsRetriever(request)
 
 	if c.recorder != nil {
 		err = c.recorder.RecordRequest(ctx, nil, requestID, jsonValue, tags)

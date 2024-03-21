@@ -13,6 +13,7 @@ package redis_recorder
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -25,6 +26,7 @@ const (
 	RequestPrefix  = "request"
 	ResponsePrefix = "response"
 	ErrorPrefix    = "error"
+	MetricsPrefix  = "metrics"
 	TagsPrefix     = "tag"
 )
 
@@ -132,6 +134,35 @@ func (r *redisRecorder) RecordError(ctx context.Context, id *string, requestID s
 	err = r.client.Set(ctx, key, compressedResponse, r.options.DefaultTTL).Err()
 	if err != nil {
 		return err
+	}
+
+	return r.updateTagIndex(ctx, tags, key)
+}
+
+func (r *redisRecorder) RecordMetrics(ctx context.Context, orderID *string, requestID string, metrics map[string]string, tags map[string]string) error {
+	jsonData, err := json.Marshal(metrics)
+	if err != nil {
+		return fmt.Errorf("cannot marshal metrics: %w", err)
+	}
+
+	key := fmt.Sprintf("%s:%s:%s", r.options.Prefix, MetricsPrefix, requestID)
+
+	if orderID != nil {
+		key = fmt.Sprintf("%s:%s:%s:%s", r.options.Prefix, MetricsPrefix, *orderID, requestID)
+	}
+
+	if r.options.Debug {
+		r.logger.Printf("metrics key: %s", key)
+	}
+
+	compressedMetrics, err := r.compressor.compressData(jsonData, r.options.CompressionLvl)
+	if err != nil {
+		return fmt.Errorf("cannot compress metrics: %w", err)
+	}
+
+	err = r.client.Set(ctx, key, compressedMetrics, r.options.DefaultTTL).Err()
+	if err != nil {
+		return fmt.Errorf("cannot set metrics: %w", err)
 	}
 
 	return r.updateTagIndex(ctx, tags, key)

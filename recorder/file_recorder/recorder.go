@@ -40,6 +40,11 @@ type fileRecorder struct {
 	errorLogger    *log.Logger
 }
 
+func (r *fileRecorder) RecordMetrics(ctx context.Context, orderID *string, requestID string, metrics map[string]string, tags map[string]string) error {
+	// File-based logs do not support recording metrics.
+	return fmt.Errorf("recordMetrics not supported in file-based recorder")
+}
+
 // NewFileRecorder creates a new instance of fileRecorder.
 func NewFileRecorder(requestLogPath, responseLogPath, errorLogPath string) recorder.Client {
 	requestLogFile, err := os.OpenFile(requestLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)

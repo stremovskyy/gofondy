@@ -30,6 +30,7 @@ type Client interface {
 	RecordRequest(ctx context.Context, orderID *string, requestID string, request []byte, tags map[string]string) error
 	RecordResponse(ctx context.Context, orderID *string, requestID string, response []byte, tags map[string]string) error
 	RecordError(ctx context.Context, orderID *string, requestID string, err error, tags map[string]string) error
+	RecordMetrics(ctx context.Context, orderID *string, requestID string, metrics map[string]string, tags map[string]string) error
 	GetRequest(ctx context.Context, requestID string) ([]byte, error)
 	GetResponse(ctx context.Context, requestID string) ([]byte, error)
 	FindByTag(ctx context.Context, tag string) ([]string, error)

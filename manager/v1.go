@@ -32,6 +32,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -52,6 +53,9 @@ func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, c
 	requestID := uuid.New().String()
 	methodPost := "POST"
 
+	tags := tagsRequestRetriever(request)
+	ctx := context.WithValue(context.Background(), "request_id", requestID)
+
 	if reservationData != nil {
 		request.ReservationData = reservationData.Base64Encoded()
 	}
@@ -61,6 +65,22 @@ func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, c
 		m.logger.Printf("[GO FONDY] URL: %v\n", url.String())
 		m.logger.Printf("[GO FONDY] Reservation data: %v\n", reservationData)
 	}
+
+	metricsMap := make(map[string]string)
+	metricsMap["url"] = url.String()
+	tim := time.Now()
+	metricsMap["start_timestamp"] = tim.Format("2006-01-02 15:04:05")
+	defer func() {
+		metricsMap["end_timestamp"] = tim.Format("2006-01-02 15:04:05")
+		metricsMap["duration"] = fmt.Sprintf("%s", time.Since(tim).String())
+
+		if m.recorder != nil {
+			err := m.recorder.RecordMetrics(ctx, nil, requestID, metricsMap, tags)
+			if err != nil {
+				m.logger.Printf("[ERROR] cannot record metrics: %v", err)
+			}
+		}
+	}()
 
 	var key string
 	if credit {
@@ -82,9 +102,6 @@ func (m *v1Client) do(url consts.FondyURL, request *models.FondyRequestObject, c
 	if m.options.IsDebug {
 		m.logger.Printf("[GO FONDY] Request: %v\n", string(jsonValue))
 	}
-
-	tags := tagsRequestRetriever(request)
-	ctx := context.WithValue(context.Background(), "request_id", requestID)
 
 	if m.recorder != nil {
 		err = m.recorder.RecordRequest(ctx, request.OrderID, requestID, jsonValue, tags)
