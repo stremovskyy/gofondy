@@ -61,7 +61,7 @@ func (c *idClient) clientStatus(fondyURL consts.FondyURL, request *models.FondyC
 	tim := time.Now()
 	metricsMap["start_timestamp"] = tim.Format("2006-01-02 15:04:05")
 	defer func() {
-		metricsMap["end_timestamp"] = tim.Format("2006-01-02 15:04:05")
+		metricsMap["end_timestamp"] = time.Now().Format("2006-01-02 15:04:05")
 		metricsMap["duration"] = fmt.Sprintf("%s", time.Since(tim).String())
 
 		if c.recorder != nil {
