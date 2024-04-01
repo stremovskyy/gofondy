@@ -27,13 +27,15 @@ package models
 import (
 	"crypto/sha1"
 	"fmt"
-	"github.com/stremovskyy/gofondy/fondy_status"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/stremovskyy/gofondy/fondy_status"
+
 	"github.com/google/uuid"
+
 	"github.com/stremovskyy/gofondy/consts"
 )
 
@@ -119,8 +121,14 @@ func (o *Order) SignValid(merchantKey string) bool {
 			s, ok := t.(*string)
 			if ok && s != nil && len(*s) > 0 {
 				preFiltered[types.Field(i).Name] = *s
-			} else if str, ok := t.(fmt.Stringer); ok && len(str.String()) > 0 {
-				preFiltered[types.Field(i).Name] = str.String()
+			} else if str, ok := t.(fmt.Stringer); ok {
+				val := reflect.ValueOf(t)
+				if val.Kind() == reflect.Ptr && !val.IsNil() {
+					stringerOutput := str.String()
+					if len(stringerOutput) > 0 {
+						preFiltered[types.Field(i).Name] = stringerOutput
+					}
+				}
 			} else if num, ok := t.(float64); ok {
 				preFiltered[types.Field(i).Name] = fmt.Sprintf("%.0f", num)
 			} else if dig, ok := t.(*int); ok {
