@@ -34,7 +34,7 @@ type InvoiceRequest struct {
 }
 
 func (i *InvoiceRequest) GetInvoiceIDString() *string {
-	if i.InvoiceID == uuid.Nil {
+	if i == nil || i.InvoiceID == uuid.Nil {
 		return nil
 	}
 
