@@ -13,8 +13,9 @@ package models
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type InvoiceRequest struct {
@@ -47,7 +48,7 @@ func (i *InvoiceRequest) GetAmountString() *string {
 }
 
 func (i *InvoiceRequest) GetMerchantIDString() *string {
-	if i.Merchant == nil {
+	if i == nil || i.Merchant == nil {
 		return nil
 	}
 
