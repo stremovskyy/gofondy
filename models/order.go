@@ -72,7 +72,7 @@ type Order struct {
 	PaymentID               *int                         `json:"payment_id"`
 	ProductID               *string                      `json:"product_id"`
 	Currency                *consts.CurrencyCode         `json:"currency"`
-	CardBin                 *int                         `json:"card_bin"`
+	CardBin                 interface{}                  `json:"card_bin"`
 	ResponseCode            interface{}                  `json:"response_code"`
 	CardType                *consts.FondyCardType        `json:"card_type"`
 	Amount                  *string                      `json:"amount"`
@@ -162,6 +162,32 @@ func (o *Order) SignValid(merchantKey string) bool {
 	}
 
 	return true
+}
+
+func (d *Order) CardBinInt() *int {
+	if d.CardBin == nil {
+		return nil
+	}
+
+	if i, ok := d.CardBin.(int); ok {
+		return &i
+	}
+
+	if i, ok := d.CardBin.(float64); ok {
+		ii := int(i)
+		return &ii
+	}
+
+	return nil
+
+}
+
+func (d *Order) IsVerificationTransaction() bool {
+	if d.TranType == nil {
+		return false
+	}
+
+	return *d.TranType == consts.FondyTransactionTypeVerification
 }
 
 func (o *Order) Captured() bool {
