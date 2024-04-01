@@ -111,7 +111,7 @@ func (o *Order) SignValid(merchantKey string) bool {
 	preFiltered := map[string]string{}
 
 	for i := 0; i < values.NumField(); i++ {
-		if types.Field(i).Name == "Signature" || types.Field(i).Name == "ResponseSignatureString" {
+		if types.Field(i).Name == "Signature" || types.Field(i).Name == "ResponseSignatureString" || types.Field(i).Name == "additional" {
 			continue
 		}
 		t := values.Field(i).Interface()
