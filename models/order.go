@@ -103,6 +103,7 @@ func (o *Order) SignValid(merchantKey string) bool {
 	if o.Signature == nil {
 		return false
 	}
+
 	s := merchantKey + "|"
 
 	values := reflect.ValueOf(*o)
@@ -118,14 +119,8 @@ func (o *Order) SignValid(merchantKey string) bool {
 			s, ok := t.(*string)
 			if ok && s != nil && len(*s) > 0 {
 				preFiltered[types.Field(i).Name] = *s
-			} else if str, ok := t.(fmt.Stringer); ok {
-				val := reflect.ValueOf(t)
-				if val.Kind() == reflect.Ptr && !val.IsNil() {
-					stringerOutput := str.String()
-					if len(stringerOutput) > 0 {
-						preFiltered[types.Field(i).Name] = stringerOutput
-					}
-				}
+			} else if str, ok := t.(fmt.Stringer); ok && len(str.String()) > 0 {
+				preFiltered[types.Field(i).Name] = str.String()
 			} else if num, ok := t.(float64); ok {
 				preFiltered[types.Field(i).Name] = fmt.Sprintf("%.0f", num)
 			} else if dig, ok := t.(*int); ok {
@@ -161,16 +156,16 @@ func (o *Order) SignValid(merchantKey string) bool {
 	return true
 }
 
-func (d *Order) CardBinInt() *int {
-	if d.CardBin == nil {
+func (o *Order) CardBinInt() *int {
+	if o.CardBin == nil {
 		return nil
 	}
 
-	if i, ok := d.CardBin.(int); ok {
+	if i, ok := o.CardBin.(int); ok {
 		return &i
 	}
 
-	if i, ok := d.CardBin.(float64); ok {
+	if i, ok := o.CardBin.(float64); ok {
 		ii := int(i)
 		return &ii
 	}
@@ -179,12 +174,12 @@ func (d *Order) CardBinInt() *int {
 
 }
 
-func (d *Order) IsVerificationTransaction() bool {
-	if d.TranType == nil {
+func (o *Order) IsVerificationTransaction() bool {
+	if o.TranType == nil {
 		return false
 	}
 
-	return *d.TranType == consts.FondyTransactionTypeVerification
+	return *o.TranType == consts.FondyTransactionTypeVerification
 }
 
 func (o *Order) Captured() bool {
