@@ -32,8 +32,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/stremovskyy/gofondy/fondy_status"
-
 	"github.com/google/uuid"
 
 	"github.com/stremovskyy/gofondy/consts"
@@ -84,7 +82,6 @@ type Order struct {
 	AdditionalInfo          *AdditionalInfo              `json:"additional_info_obj"`
 	RequestId               *string                      `json:"request_id"`
 
-	StatusCode *fondy_status.StatusCode `json:"-"`
 	additional *AdditionalInfo
 }
 
