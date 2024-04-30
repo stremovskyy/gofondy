@@ -25,8 +25,9 @@
 package models
 
 import (
-	"github.com/stremovskyy/gofondy/utils"
 	"strconv"
+
+	"github.com/stremovskyy/gofondy/utils"
 )
 
 type ReservationData struct {
@@ -39,7 +40,7 @@ type ReservationData struct {
 	PurchasePaymentId *string `json:"purchase_payment_id,omitempty"`
 }
 
-func NewReservationDataForPaymentID(purchasePaymentId *int) *ReservationData {
+func NewReservationDataForPaymentID(purchasePaymentId *int64) *ReservationData {
 	if purchasePaymentId == nil {
 		return nil
 	}
