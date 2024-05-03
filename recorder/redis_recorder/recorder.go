@@ -1,6 +1,6 @@
 /*
  * Project: banker
- * File: recorder.go (2/20/24, 10:57 AM)
+ * File: recorder.go (5/3/24, 3:50 PM)
  *
  * Copyright (C) Megakit Systems 2017-2024, Inc - All Rights Reserved
  * @link https://www.megakit.pro
@@ -71,6 +71,10 @@ func (r *redisRecorder) RecordRequest(ctx context.Context, orderID *string, requ
 
 	if orderID != nil {
 		key = fmt.Sprintf("%s:%s:%s:%s", r.options.Prefix, RequestPrefix, *orderID, requestID)
+	}
+
+	if tags == nil {
+		tags = make(map[string]string)
 	}
 
 	tags["request_id"] = requestID
