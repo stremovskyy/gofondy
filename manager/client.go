@@ -46,24 +46,28 @@ type ClientOptions struct {
 }
 
 func NewClient(options *ClientOptions) Client {
-	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: options.KeepAlive,
-	}
+	cl := buildHTTPClient(options, nil)
 
-	tr := &http.Transport{
-		MaxIdleConns:       options.MaxIdleConns,
-		IdleConnTimeout:    options.IdleConnTimeout,
-		DisableCompression: true,
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return dialer.DialContext(ctx, network, addr)
+	return &client{
+		v1: &v1Client{
+			client:  cl,
+			options: options,
+			logger:  log.New(log.Writer(), "Fondy v1: ", log.LstdFlags),
+		},
+		v2: &v2Client{
+			client: cl,
+			logger: log.New(log.Writer(), "Fondy v2: ", log.LstdFlags),
+		},
+		id: &idClient{
+			client:  cl,
+			options: options,
+			logger:  log.New(log.Writer(), "Fondy ID: ", log.LstdFlags),
 		},
 	}
+}
 
-	cl := &http.Client{
-		Transport: tr,
-		Timeout:   options.Timeout,
-	}
+func NewClientWithHTTP(options *ClientOptions, httpClient *http.Client) Client {
+	cl := buildHTTPClient(options, httpClient)
 
 	return &client{
 		v1: &v1Client{
@@ -84,24 +88,7 @@ func NewClient(options *ClientOptions) Client {
 }
 
 func NewClientWithRecorder(options *ClientOptions, recorder recorder.Client) Client {
-	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: options.KeepAlive,
-	}
-
-	tr := &http.Transport{
-		MaxIdleConns:       options.MaxIdleConns,
-		IdleConnTimeout:    options.IdleConnTimeout,
-		DisableCompression: true,
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return dialer.DialContext(ctx, network, addr)
-		},
-	}
-
-	cl := &http.Client{
-		Transport: tr,
-		Timeout:   options.Timeout,
-	}
+	cl := buildHTTPClient(options, nil)
 
 	return &client{
 		v1: &v1Client{
@@ -122,6 +109,57 @@ func NewClientWithRecorder(options *ClientOptions, recorder recorder.Client) Cli
 			recorder: recorder,
 		},
 	}
+}
+
+func NewClientWithRecorderAndHTTP(options *ClientOptions, recorder recorder.Client, httpClient *http.Client) Client {
+	cl := buildHTTPClient(options, httpClient)
+
+	return &client{
+		v1: &v1Client{
+			client:   cl,
+			options:  options,
+			logger:   log.New(log.Writer(), "Fondy v1: ", log.LstdFlags),
+			recorder: recorder,
+		},
+		v2: &v2Client{
+			client:   cl,
+			logger:   log.New(log.Writer(), "Fondy v2: ", log.LstdFlags),
+			recorder: recorder,
+		},
+		id: &idClient{
+			client:   cl,
+			options:  options,
+			logger:   log.New(log.Writer(), "Fondy ID: ", log.LstdFlags),
+			recorder: recorder,
+		},
+	}
+}
+
+func buildHTTPClient(options *ClientOptions, provided *http.Client) *http.Client {
+	if provided != nil {
+		return provided
+	}
+
+	dialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: options.KeepAlive,
+	}
+
+	tr := &http.Transport{
+		MaxIdleConns:       options.MaxIdleConns,
+		IdleConnTimeout:    options.IdleConnTimeout,
+		DisableCompression: true,
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.DialContext(ctx, network, addr)
+		},
+	}
+
+	cl := &http.Client{
+		Transport: tr,
+		Timeout:   options.Timeout,
+	}
+
+	return cl
 }
 
 func (m *client) payment(url consts.FondyURL, request *models.FondyRequestObject, merchantAccount *models.MerchantAccount, reservationData *models.ReservationData) (*[]byte, error) {

@@ -12,6 +12,8 @@
 package gofondy
 
 import (
+	"net/http"
+
 	"github.com/stremovskyy/gofondy/manager"
 	"github.com/stremovskyy/gofondy/models"
 	"github.com/stremovskyy/gofondy/recorder"
@@ -32,6 +34,20 @@ func New(options *models.Options) FondyGateway {
 func NewWithRecorder(options *models.Options, recorder recorder.Client) FondyGateway {
 	return &gateway{
 		manager: manager.NewManagerWithRecorder(options, recorder),
+		options: options,
+	}
+}
+
+func NewWithHTTPClient(options *models.Options, httpClient *http.Client) FondyGateway {
+	return &gateway{
+		manager: manager.NewManagerWithClient(options, httpClient),
+		options: options,
+	}
+}
+
+func NewWithRecorderAndHTTPClient(options *models.Options, recorder recorder.Client, httpClient *http.Client) FondyGateway {
+	return &gateway{
+		manager: manager.NewManagerWithRecorderAndClient(options, recorder, httpClient),
 		options: options,
 	}
 }

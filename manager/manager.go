@@ -25,6 +25,8 @@
 package manager
 
 import (
+	"net/http"
+
 	"github.com/stremovskyy/gofondy/consts"
 	"github.com/stremovskyy/gofondy/models"
 	"github.com/stremovskyy/gofondy/models/models_v2"
@@ -79,6 +81,39 @@ func NewManagerWithRecorder(options *models.Options, recorder recorder.Client) F
 				IsDebug:         options.IsDebug,
 			},
 			recorder,
+		),
+	}
+}
+
+func NewManagerWithClient(options *models.Options, httpClient *http.Client) FondyManager {
+	return &manager{
+		options: options,
+		client: NewClientWithHTTP(
+			&ClientOptions{
+				Timeout:         options.Timeout,
+				KeepAlive:       options.KeepAlive,
+				MaxIdleConns:    options.MaxIdleConns,
+				IdleConnTimeout: options.IdleConnTimeout,
+				IsDebug:         options.IsDebug,
+			},
+			httpClient,
+		),
+	}
+}
+
+func NewManagerWithRecorderAndClient(options *models.Options, recorder recorder.Client, httpClient *http.Client) FondyManager {
+	return &manager{
+		options: options,
+		client: NewClientWithRecorderAndHTTP(
+			&ClientOptions{
+				Timeout:         options.Timeout,
+				KeepAlive:       options.KeepAlive,
+				MaxIdleConns:    options.MaxIdleConns,
+				IdleConnTimeout: options.IdleConnTimeout,
+				IsDebug:         options.IsDebug,
+			},
+			recorder,
+			httpClient,
 		),
 	}
 }
